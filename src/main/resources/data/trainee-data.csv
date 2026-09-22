@@ -1,0 +1,3 @@
+id,firstName,lastName,username,password,isActive,dateOfBirth,address
+1,John,Doe,John.Doe,aZ8kLp3qRt,true,1995-05-10,Tashkent
+2,Alice,Brown,Alice.Brown,pQ7mNx2vBw,true,1998-11-22,Samarkand
