@@ -58,7 +58,6 @@ public class GymFacade {
     }
 
 
-
     public Trainer createTrainer(Trainer trainer) {
         log.info("Facade: createTrainer");
         return trainerService.create(trainer);

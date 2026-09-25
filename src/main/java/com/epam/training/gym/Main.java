@@ -33,12 +33,21 @@ public class Main {
                     .address("Tashkent, Chilonzor")
                     .build());
             log.info("New trainee -> username={}", trainee.getUsername());
+
             Trainer trainer = facade.createTrainer(Trainer.builder()
                     .firstName("Anna")
                     .lastName("Lee")               // duplicate ataylab-> Anna.Lee1
                     .specialization(new TrainingType(1L, "Yoga"))
                     .build());
             log.info("New trainer -> username={}", trainer.getUsername());
+
+
+            trainer.setSpecialization(new TrainingType(2L, "Fitness"));
+            facade.updateTrainer(trainer);
+            log.info("Trainer after update: specialization={}",
+                    facade.selectTrainer(trainer.getUserId())
+                            .map(t -> t.getSpecialization().getTrainingTypeName())
+                            .orElse("-"));
 
             Training training = facade.createTraining(Training.builder()
                     .traineeId(trainee.getUserId())

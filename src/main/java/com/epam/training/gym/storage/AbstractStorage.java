@@ -12,6 +12,7 @@ public abstract class AbstractStorage<T> {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractStorage.class);
 
+    // mana shun yerga saqlanyapti data , bu ram da xolos
     private final Map<Long, T> storage = new ConcurrentHashMap<>();
 
     public void save(Long id, T entity) {

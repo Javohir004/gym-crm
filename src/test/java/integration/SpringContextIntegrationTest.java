@@ -59,14 +59,14 @@ class SpringContextIntegrationTest {
         assertEquals(10, trainee.getPassword().length());
         assertTrue(trainee.isActive());
 
-        // clean up so later tests aren't affected by this extra trainee
+
         facade.deleteTrainee(trainee.getUserId());
     }
 
     @Test
     @Order(3)
     void createTrainer_generatesSuffixedUsername_whenNameAlreadySeeded() {
-        // trainer-data.csv already contains Anna.Lee
+
         Trainer trainer = facade.createTrainer(Trainer.builder()
                 .firstName("Anna")
                 .lastName("Lee")
