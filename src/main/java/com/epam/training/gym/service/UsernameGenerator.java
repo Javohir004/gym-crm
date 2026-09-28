@@ -1,7 +1,7 @@
 package com.epam.training.gym.service;
 
-import com.epam.training.gym.dao.TraineeDao;
-import com.epam.training.gym.dao.TrainerDao;
+import com.epam.training.gym.dao.UserDao;
+import com.epam.training.gym.util.Validation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,29 +16,19 @@ public class UsernameGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(UsernameGenerator.class);
 
-    private TraineeDao traineeDao;
-    private TrainerDao trainerDao;
+    private UserDao userDao;
 
     @Autowired
-    public void setTraineeDao(TraineeDao traineeDao) {
-        this.traineeDao = traineeDao;
-    }
-
-    @Autowired
-    public void setTrainerDao(TrainerDao trainerDao) {
-        this.trainerDao = trainerDao;
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
     }
 
     public String generate(String firstName, String lastName) {
-        if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
-            throw new IllegalArgumentException("First name and last name must not be empty");
-        }
+        Validation.requireText(firstName, "First name");
+        Validation.requireText(lastName, "Last name");
 
         String base = firstName.trim() + "." + lastName.trim();
-
-        Set<String> taken = new HashSet<>();
-        taken.addAll(traineeDao.getAllUsernames());
-        taken.addAll(trainerDao.getAllUsernames());
+        Set<String> taken = new HashSet<>(userDao.findUsernamesStartingWith(base));
 
         if (!taken.contains(base)) {
             log.debug("Generated username '{}'", base);

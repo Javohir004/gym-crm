@@ -1,60 +1,51 @@
 package com.epam.training.gym.dao;
 
 import com.epam.training.gym.model.Trainee;
-import com.epam.training.gym.storage.TraineeStorage;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import java.util.Optional;
 
 @Repository
 public class TraineeDao {
 
     private static final Logger log = LoggerFactory.getLogger(TraineeDao.class);
 
-    private TraineeStorage storage;
+    private EntityManager entityManager;
 
-    @Autowired
-    public void setStorage(TraineeStorage storage) {
-        this.storage = storage;
+    @PersistenceContext
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
-    public Trainee create(Trainee trainee) {
-        storage.save(trainee.getUserId(), trainee);
-        log.info("Created trainee id={} username={}", trainee.getUserId(), trainee.getUsername());
+
+    public Trainee save(Trainee trainee) {
+        entityManager.persist(trainee);
+        log.info("Saved trainee id={} username={}", trainee.getId(), trainee.getUser().getUsername());
         return trainee;
     }
 
     public Trainee update(Trainee trainee) {
-        storage.save(trainee.getUserId(), trainee);
-        log.info("Updated trainee id={}", trainee.getUserId());
-        return trainee;
+        Trainee merged = entityManager.merge(trainee);
+        log.info("Updated trainee id={}", merged.getId());
+        return merged;
     }
 
-    public void delete(Long id) {
-        storage.delete(id);
-        log.info("Deleted trainee id={}", id);
+    public Optional<Trainee> findByUsername(String username) {
+        return entityManager
+                .createQuery("select t from Trainee t where t.user.username = :username", Trainee.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst();
     }
 
-    public Trainee select(Long id) {
-        return storage.get(id);
-    }
 
-    public List<Trainee> selectAll() {
-        return new ArrayList<>(storage.getAll());
-    }
-
-    public Set<String> getAllUsernames() {
-        Set<String> usernames = new HashSet<>();
-        for (Trainee trainee : storage.getAll()) {
-            usernames.add(trainee.getUsername());
-        }
-        return usernames;
+    public void delete(Trainee trainee) {
+        Trainee managed = entityManager.contains(trainee) ? trainee : entityManager.merge(trainee);
+        entityManager.remove(managed);
+        log.info("Deleted trainee id={}", trainee.getId());
     }
 }
