@@ -47,7 +47,7 @@ Main -> Facade -> Service -> DAO -> Storage (in-memory Map)
 ## How to run
  
 ```
-mvn clean test
+mvn clean test and install
 ```
 or run `Main.java` directly from the IDE.
  
