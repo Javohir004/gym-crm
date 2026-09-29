@@ -68,7 +68,6 @@ class TrainerServiceTest {
         trainer = Trainer.builder().user(user).specialization(yoga).build();
     }
 
-    // ---------- create ----------
 
     @Test
     void createTrainer_savesTrainerWithSpecializationAndGeneratedUser() {
@@ -125,7 +124,6 @@ class TrainerServiceTest {
         }
     }
 
-    // ---------- reads / password / toggle ----------
 
     @Test
     void credentialsMatch_delegatesToAuthenticationService() {
@@ -178,7 +176,6 @@ class TrainerServiceTest {
         verifyNoInteractions(userAccountService);
     }
 
-    // ---------- update ----------
 
     @Test
     void update_changesNamesAndSpecialization() {

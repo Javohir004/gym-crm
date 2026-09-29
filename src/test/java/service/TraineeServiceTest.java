@@ -74,7 +74,6 @@ class TraineeServiceTest {
                 .build();
     }
 
-    // ---------- create ----------
 
     @Test
     void createTrainee_savesTraineeWithGeneratedUser() {
@@ -112,7 +111,6 @@ class TraineeServiceTest {
         }
     }
 
-    // ---------- authentication-backed reads ----------
 
     @Test
     void credentialsMatch_delegatesToAuthenticationService() {
@@ -138,7 +136,6 @@ class TraineeServiceTest {
         assertThrows(AuthenticationException.class, () -> service.getByUsername(USERNAME, "wrong"));
     }
 
-    // ---------- change password / toggle ----------
 
     @Test
     void changePassword_delegatesToUserAccountService() {
@@ -167,7 +164,6 @@ class TraineeServiceTest {
         assertFalse(service.toggleActive(USERNAME, PASSWORD));
     }
 
-    // ---------- update ----------
 
     @Test
     void update_changesProfileAndPersistsIt() {
@@ -217,7 +213,6 @@ class TraineeServiceTest {
         verifyNoInteractions(traineeDao);
     }
 
-    // ---------- delete ----------
 
     @Test
     void delete_removesAuthenticatedTrainee() {
@@ -249,7 +244,6 @@ class TraineeServiceTest {
         }
     }
 
-    // ---------- unassigned trainers ----------
 
     @Test
     void getUnassignedTrainers_returnsTrainersFromDao_afterAuthentication() {
@@ -272,7 +266,6 @@ class TraineeServiceTest {
         verifyNoInteractions(trainerDao);
     }
 
-    // ---------- update trainers ----------
 
     @Test
     void updateTrainers_replacesTheWholeTrainersList() {

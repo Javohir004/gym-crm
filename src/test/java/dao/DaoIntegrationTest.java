@@ -28,10 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Runs the real DAOs against the in-memory H2 database through Hibernate.
- * Every test runs inside a transaction that is rolled back, so tests do not affect each other.
- */
+
 class DaoIntegrationTest {
 
     private static AnnotationConfigApplicationContext context;
@@ -60,7 +57,7 @@ class DaoIntegrationTest {
         }
     }
 
-    /** Runs the body in a transaction and always rolls it back. */
+
     private static void rollingBack(Runnable body) {
         tx.executeWithoutResult(status -> {
             body.run();

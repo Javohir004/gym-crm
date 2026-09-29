@@ -47,7 +47,7 @@ class GymFacadeTest {
         facade = new GymFacade(traineeService, trainerService, trainingService);
     }
 
-    // ---------- trainer ----------
+
 
     @Test
     void createTrainer_delegatesToTrainerService() {
@@ -94,7 +94,7 @@ class GymFacadeTest {
         assertFalse(facade.toggleTrainerActive(USER, PASS));
     }
 
-    // ---------- trainee ----------
+
 
     @Test
     void createTrainee_delegatesToTraineeService() {
@@ -167,7 +167,7 @@ class GymFacadeTest {
         assertSame(trainee, facade.updateTraineeTrainers(USER, PASS, usernames));
     }
 
-    // ---------- training ----------
+
 
     @Test
     void addTraining_delegatesToTrainingService() {
@@ -196,7 +196,6 @@ class GymFacadeTest {
         assertSame(trainings, facade.getTrainerTrainings("Anna.Lee", PASS, null, null, "john"));
     }
 
-    // ---------- error propagation ----------
 
     @Test
     void serviceExceptions_areNotSwallowedByFacade() {
@@ -206,7 +205,6 @@ class GymFacadeTest {
         assertThrows(AuthenticationException.class, () -> facade.getTrainee(USER, "wrong"));
     }
 
-    // ---------- logging ----------
 
     @Test
     void operations_areLoggedWithUsername_butNeverWithPasswords() {

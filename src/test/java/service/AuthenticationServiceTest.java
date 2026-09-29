@@ -54,7 +54,6 @@ class AuthenticationServiceTest {
         user = User.builder().username(USERNAME).password(PASSWORD).active(true).build();
     }
 
-    // ---------- authenticate(User) ----------
 
     @Test
     void authenticate_returnsUser_whenCredentialsMatch() {
@@ -106,7 +105,7 @@ class AuthenticationServiceTest {
         assertEquals(wrongPassword.getMessage(), unknownUser.getMessage());
     }
 
-    // ---------- trainee ----------
+
 
     @Test
     void authenticateTrainee_returnsTrainee_whenCredentialsMatch() {
@@ -153,7 +152,7 @@ class AuthenticationServiceTest {
         assertFalse(service.traineeCredentialsMatch("ghost", PASSWORD));
     }
 
-    // ---------- trainer ----------
+
 
     @Test
     void authenticateTrainer_returnsTrainer_whenCredentialsMatch() {
@@ -198,7 +197,6 @@ class AuthenticationServiceTest {
         verifyNoInteractions(trainerDao);
     }
 
-    // ---------- logging ----------
 
     @Test
     void failedAuthentication_isLoggedAsWarning_withoutLeakingPassword() {

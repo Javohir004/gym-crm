@@ -73,7 +73,6 @@ class TrainingServiceTest {
         return new TrainingRequest("John.Doe", "Anna.Lee", "Morning Yoga", "Yoga", DATE, 60);
     }
 
-    // ---------- addTraining ----------
 
     @Test
     void addTraining_savesTrainingBuiltFromRequest() {
@@ -206,7 +205,6 @@ class TrainingServiceTest {
         verify(trainingDao, never()).save(any());
     }
 
-    // ---------- queries ----------
 
     @Test
     void getTraineeTrainings_authenticatesAsTrainee_andPassesAllFiltersToDao() {

@@ -27,7 +27,7 @@ public class Main {
 
             GymFacade facade = context.getBean(GymFacade.class);
 
-            // ---- 1, 2. Create profiles ----
+
             step("1-2. Create Trainer and Trainee profiles");
             Trainer anna = facade.createTrainer("Anna", "Lee", "Yoga");
             Trainer mark = facade.createTrainer("Mark", "King", "Fitness");
@@ -43,7 +43,7 @@ public class Main {
             String john2Pass = john2.getUser().getPassword();
             log.info("Generated usernames: {}, {}, {}, {}", annaUser, markUser, johnUser, john2User);
 
-            // ---- Validation and authentication rules ----
+
             step("Validation and authentication");
             try {
                 facade.createTrainee(" ", "Doe", null, null);
@@ -56,20 +56,20 @@ public class Main {
                 log.warn("Rejected as expected: {}", e.getMessage());
             }
 
-            // ---- 3, 4. Username and password matching ----
+
             step("3-4. Username and password matching");
             log.info("Trainee, correct password: {}", facade.traineeCredentialsMatch(johnUser, johnPass));
             log.info("Trainee, wrong password:   {}", facade.traineeCredentialsMatch(johnUser, "wrong-password"));
             log.info("Trainer, correct password: {}", facade.trainerCredentialsMatch(annaUser, annaPass));
             log.info("Trainer, wrong password:   {}", facade.trainerCredentialsMatch(annaUser, "wrong-password"));
 
-            // ---- 5, 6. Select profile by username ----
+
             step("5-6. Select profile by username");
             log.info("Trainer {} specialization: {}", annaUser,
                     facade.getTrainer(annaUser, annaPass).getSpecialization().getTrainingTypeName());
             log.info("Trainee {} address: {}", johnUser, facade.getTrainee(johnUser, johnPass).getAddress());
 
-            // ---- 9, 10. Update profile ----
+
             step("9-10. Update profiles");
             facade.updateTrainer(annaUser, annaPass, "Anna", "Lee", "Stretching");
             log.info("Trainer {} new specialization: {}", annaUser,
@@ -77,7 +77,7 @@ public class Main {
             facade.updateTrainee(johnUser, johnPass, "John", "Doe", LocalDate.of(2000, 1, 15), "Tashkent, Yunusobod");
             log.info("Trainee {} new address: {}", johnUser, facade.getTrainee(johnUser, johnPass).getAddress());
 
-            // ---- 7, 8. Change password ----
+
             step("7-8. Change password");
             String oldJohnPass = johnPass;
             johnPass = "NewTraineePass1";
@@ -90,14 +90,14 @@ public class Main {
             log.info("Trainer, old password still works: {}", facade.trainerCredentialsMatch(annaUser, oldAnnaPass));
             log.info("Trainer, new password works:       {}", facade.trainerCredentialsMatch(annaUser, annaPass));
 
-            // ---- 11, 12. Activate / De-activate (each call switches the state) ----
+
             step("11-12. Activate / De-activate");
             log.info("Trainee active after 1st call: {}", facade.toggleTraineeActive(johnUser, johnPass));
             log.info("Trainee active after 2nd call: {}", facade.toggleTraineeActive(johnUser, johnPass));
             log.info("Trainer active after 1st call: {}", facade.toggleTrainerActive(annaUser, annaPass));
             log.info("Trainer active after 2nd call: {}", facade.toggleTrainerActive(annaUser, annaPass));
 
-            // ---- 17, 18. Trainee's trainers ----
+
             step("17-18. Trainee's trainers list");
             log.info("Not assigned to {}: {}", johnUser, trainerNames(facade.getUnassignedTrainers(johnUser, johnPass)));
             facade.updateTraineeTrainers(johnUser, johnPass, List.of(annaUser));
@@ -109,7 +109,7 @@ public class Main {
                 log.warn("Rejected as expected: {}", e.getMessage());
             }
 
-            // ---- 16. Add training ----
+
             step("16. Add training");
             facade.addTraining(johnUser, johnPass, new TrainingRequest(
                     johnUser, annaUser, "Morning Yoga", "Yoga", LocalDate.of(2026, 9, 1), 60));
@@ -119,7 +119,7 @@ public class Main {
                     john2User, annaUser, "Evening Stretch", "Stretching", LocalDate.of(2026, 9, 20), 30));
             log.info("3 trainings added");
 
-            // ---- 14. Trainee's trainings by criteria ----
+
             step("14. Trainee's trainings");
             log.info("All:                  {}", trainingNames(facade.getTraineeTrainings(johnUser, johnPass, null, null, null, null)));
             log.info("From 10 Sep to 30 Sep: {}", trainingNames(facade.getTraineeTrainings(
@@ -127,14 +127,14 @@ public class Main {
             log.info("Trainer name 'anna':  {}", trainingNames(facade.getTraineeTrainings(johnUser, johnPass, null, null, "anna", null)));
             log.info("Type 'Fitness':       {}", trainingNames(facade.getTraineeTrainings(johnUser, johnPass, null, null, null, "Fitness")));
 
-            // ---- 15. Trainer's trainings by criteria ----
+
             step("15. Trainer's trainings");
             log.info("All:                  {}", trainingNames(facade.getTrainerTrainings(annaUser, annaPass, null, null, null)));
             log.info("From 15 Sep:          {}", trainingNames(facade.getTrainerTrainings(
                     annaUser, annaPass, LocalDate.of(2026, 9, 15), null, null)));
             log.info("Trainee name 'john':  {}", trainingNames(facade.getTrainerTrainings(annaUser, annaPass, null, null, "john")));
 
-            // ---- 13. Delete trainee (hard delete + cascade to trainings) ----
+
             step("13. Delete trainee");
             facade.deleteTrainee(johnUser, johnPass);
             log.info("Deleted trainee still can log in: {}", facade.traineeCredentialsMatch(johnUser, johnPass));
