@@ -9,11 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * One place that turns every exception into the same JSON shape
- * ({@link ErrorResponse}) with the right HTTP status (task note 15/18:
- * "Implement error handling for all endpoints").
- */
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -39,11 +35,7 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
-    /**
-     * Anything unexpected. The real cause is logged (with stack trace) for
-     * the developer, but the client only gets a generic message - never
-     * leak internal details through the REST response.
-     */
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
         log.error("Unhandled exception, transactionId={}", MDC.get("transactionId"), e);

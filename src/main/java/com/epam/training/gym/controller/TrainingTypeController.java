@@ -13,10 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Endpoint 17: Get Training types. No authentication - the task explicitly
- * says "Request - no data", and this is a constant, non-sensitive list.
- */
+
 @RestController
 @RequestMapping("/api/training-types")
 @Tag(name = "Training Type", description = "The constant list of training types")

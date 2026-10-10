@@ -6,13 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-/**
- * Reads username/password out of the "Authorization: Basic ..." header.
- * Every endpoint except registration, login and "get training types" needs
- * this - the task's own request fields rarely repeat the password, so it is
- * carried in this standard header instead (see README for this design
- * choice).
- */
+
 public final class BasicAuthUtil {
 
     private BasicAuthUtil() {

@@ -33,9 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Endpoints 1, 8, 9, 13, 16 - everything about Trainer profiles.
- */
+
 @RestController
 @RequestMapping("/api/trainers")
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
@@ -47,7 +45,6 @@ public class TrainerController {
         this.facade = facade;
     }
 
-    /** 1. Trainer Registration (POST). */
     @PostMapping
     @Operation(summary = "Register a new Trainer")
     @ApiResponse(responseCode = "201", description = "Trainer created")
@@ -59,7 +56,6 @@ public class TrainerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /** 8. Get Trainer Profile (GET). */
     @GetMapping("/{username}")
     @Operation(summary = "Get a trainer's own profile")
     @ApiResponse(responseCode = "200", description = "Profile found")
@@ -71,7 +67,6 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toTrainerProfileResponse(trainer));
     }
 
-    /** 9. Update Trainer Profile (PUT): specialization is read-only, ignored even if sent. */
     @PutMapping("/{username}")
     @Operation(summary = "Update a trainer's own profile (specialization cannot be changed here)")
     @ApiResponse(responseCode = "200", description = "Profile updated")
@@ -84,7 +79,6 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toUpdateTrainerProfileResponse(trainer));
     }
 
-    /** 13. Get Trainer Trainings List (GET): every filter is optional. */
     @GetMapping("/{username}/trainings")
     @Operation(summary = "List this trainer's trainings, optionally filtered")
     @ApiResponse(responseCode = "200", description = "List returned")
@@ -99,7 +93,6 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
-    /** 16. Activate/De-activate Trainer (PATCH). */
     @PatchMapping("/{username}/status")
     @Operation(summary = "Activate or de-activate this trainer")
     @ApiResponse(responseCode = "200", description = "Status updated")

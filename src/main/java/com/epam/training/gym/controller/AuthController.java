@@ -13,11 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Endpoints 3 (Login) and 4 (Change Login). Not tied to Trainee or Trainer
- * specifically - both kinds of users log in and change their password the
- * same way.
- */
+
 @RestController
 @Tag(name = "Auth", description = "Login and password change, for both Trainees and Trainers")
 public class AuthController {
@@ -28,7 +24,6 @@ public class AuthController {
         this.facade = facade;
     }
 
-    /** 3. Login (GET): username/password are query params since GET has no body. */
     @GetMapping("/api/login")
     @Operation(summary = "Login", description = "Checks that the username and password match")
     @ApiResponse(responseCode = "200", description = "Credentials match")
@@ -38,7 +33,6 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    /** 4. Change Login (PUT). */
     @PutMapping("/api/login")
     @Operation(summary = "Change password", description = "Requires the current password")
     @ApiResponse(responseCode = "200", description = "Password changed")

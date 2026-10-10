@@ -8,10 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Read-only: Training Types are a constant list (task note 14 / REST note
- * 14), so this service only exposes a way to list them.
- */
+
 @Service
 @Transactional(readOnly = true)
 public class TrainingTypeService {

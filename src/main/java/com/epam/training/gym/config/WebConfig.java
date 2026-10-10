@@ -12,12 +12,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
-/**
- * Web (child) context configuration: only @RestController beans live here.
- * Registers a Jackson converter that understands LocalDate (java.time),
- * so request/response bodies serialize dates as "2026-09-01" instead of
- * failing or producing a timestamp array.
- */
+
 @Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = {"com.epam.training.gym.controller", "com.epam.training.gym.exception"})

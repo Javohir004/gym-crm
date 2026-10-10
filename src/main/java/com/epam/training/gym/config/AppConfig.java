@@ -20,15 +20,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import javax.sql.DataSource;
 import java.util.Properties;
 
-/**
- * Root Spring configuration: component scan, property placeholders,
- * database connection (DataSource), Hibernate (EntityManagerFactory)
- * and transaction management.
- * <p>
- * Controllers are excluded here on purpose: they live in the child
- * (web) context created by WebConfig, so they are not created twice
- * and can see the DispatcherServlet-specific beans.
- */
+
 @Configuration
 @ComponentScan(basePackages = "com.epam.training.gym",
         excludeFilters = {

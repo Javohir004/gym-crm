@@ -12,14 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-/**
- * Per-call logging (task note 17.2): which endpoint was called, and what the
- * service responded with (status code). Must run AFTER TransactionIdFilter,
- * so these two log lines carry the transactionId too. Request/response
- * bodies are intentionally not logged here, since some of them (login,
- * change password) carry a password - logging the status code is enough to
- * know whether the call succeeded.
- */
+
 public class RestCallLoggingFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(RestCallLoggingFilter.class);

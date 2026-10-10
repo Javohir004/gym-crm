@@ -13,12 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Endpoint 14: Add Training. The request carries no Training Type - it is
- * taken from the trainer's own specialization (see TrainingService).
- * Either the trainee or the trainer involved may call this (any
- * authenticated user, per task note 3).
- */
+
 @RestController
 @RequestMapping("/api/trainings")
 @Tag(name = "Training", description = "Adding a training session")

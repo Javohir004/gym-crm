@@ -63,11 +63,7 @@ public class TrainerDao {
                 .getResultList();
     }
 
-    /**
-     * Same as {@link #findNotAssignedToTrainee}, but only trainers whose
-     * user account is active - used by the REST "not assigned active
-     * trainers" endpoint.
-     */
+
     public List<Trainer> findNotAssignedToTraineeActive(String traineeUsername) {
         return entityManager
                 .createQuery("select t from Trainer t where t.user.active = true and t.id not in "

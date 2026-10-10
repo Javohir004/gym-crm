@@ -98,17 +98,12 @@ public class TraineeService {
         return userAccountService.toggleActive(trainee.getUser());
     }
 
-    /** Used by the REST "Activate/De-activate Trainee" endpoint: sets an explicit value. */
     public void setActive(String username, String password, boolean active) {
         Trainee trainee = authenticationService.authenticateTrainee(username, password);
         userAccountService.setActive(trainee.getUser(), active);
     }
 
-    /**
-     * Used by the REST "Update Trainee Profile" endpoint: updates the profile
-     * fields AND sets Is Active explicitly in the same call (the REST request
-     * carries Is Active as a required field, unlike the Hibernate-module update).
-     */
+
     public Trainee updateFullProfile(String username, String password, String firstName, String lastName,
                                      LocalDate dateOfBirth, String address, boolean isActive) {
         Trainee trainee = authenticationService.authenticateTrainee(username, password);
@@ -124,7 +119,6 @@ public class TraineeService {
         return traineeDao.update(trainee);
     }
 
-    /** Used by the REST "not assigned active trainers" endpoint (note 10). */
     @Transactional(readOnly = true)
     public List<Trainer> getUnassignedActiveTrainers(String username, String password) {
         authenticationService.authenticateTrainee(username, password);

@@ -58,11 +58,6 @@ public class TrainingService {
         this.authenticationService = authenticationService;
     }
 
-    /**
-     * REST "Add Training" (endpoint 14): the request carries no Training Type
-     * field, unlike the Hibernate-module version. The training's type is
-     * taken from the trainer's own specialization instead.
-     */
     public Training addTraining(String username, String password, String traineeUsername, String trainerUsername,
                                 String trainingName, LocalDate trainingDate, Integer durationMinutes) {
         authenticationService.authenticate(username, password);

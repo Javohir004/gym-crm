@@ -56,11 +56,7 @@ public class UserAccountService {
     }
 
 
-    /**
-     * Sets the active flag to an explicit value (used by the REST endpoints,
-     * which always send the desired Is Active value rather than asking to
-     * flip it).
-     */
+
     public void setActive(User user, boolean active) {
         user.setActive(active);
         userDao.update(user);

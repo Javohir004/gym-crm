@@ -36,12 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
-/**
- * Endpoints 2, 5, 6, 7, 10, 11, 12, 15 - everything about Trainee profiles.
- * Every endpoint except registration requires HTTP Basic Auth; the
- * {username} in the path must match the authenticated user (you can only
- * act on your own profile).
- */
+
 @RestController
 @RequestMapping("/api/trainees")
 @Tag(name = "Trainee", description = "Trainee registration, profile, trainers list and trainings")
@@ -53,7 +48,6 @@ public class TraineeController {
         this.facade = facade;
     }
 
-    /** 2. Trainee Registration (POST). */
     @PostMapping
     @Operation(summary = "Register a new Trainee")
     @ApiResponse(responseCode = "201", description = "Trainee created")
@@ -66,7 +60,6 @@ public class TraineeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /** 5. Get Trainee Profile (GET). */
     @GetMapping("/{username}")
     @Operation(summary = "Get a trainee's own profile", security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "basicAuth"))
     @ApiResponse(responseCode = "200", description = "Profile found")
@@ -78,7 +71,6 @@ public class TraineeController {
         return ResponseEntity.ok(DtoMapper.toTraineeProfileResponse(trainee));
     }
 
-    /** 6. Update Trainee Profile (PUT). */
     @PutMapping("/{username}")
     @Operation(summary = "Update a trainee's own profile")
     @ApiResponse(responseCode = "200", description = "Profile updated")
@@ -92,7 +84,6 @@ public class TraineeController {
         return ResponseEntity.ok(DtoMapper.toUpdateTraineeProfileResponse(trainee));
     }
 
-    /** 7. Delete Trainee Profile (DELETE): hard delete, cascades to trainings. */
     @DeleteMapping("/{username}")
     @Operation(summary = "Delete a trainee's own profile (hard delete, cascades to its trainings)")
     @ApiResponse(responseCode = "200", description = "Deleted")
@@ -103,7 +94,6 @@ public class TraineeController {
         return ResponseEntity.ok().build();
     }
 
-    /** 10. Get not assigned active trainers (GET). */
     @GetMapping("/{username}/unassigned-trainers")
     @Operation(summary = "List active trainers not yet assigned to this trainee")
     @ApiResponse(responseCode = "200", description = "List returned")
@@ -114,7 +104,6 @@ public class TraineeController {
         return ResponseEntity.ok(DtoMapper.toTrainerShortDtoList(trainers));
     }
 
-    /** 11. Update Trainee's Trainer List (PUT): replaces the whole list. */
     @PutMapping("/{username}/trainers")
     @Operation(summary = "Replace this trainee's trainers with the given list")
     @ApiResponse(responseCode = "200", description = "List updated")
@@ -126,7 +115,6 @@ public class TraineeController {
         return ResponseEntity.ok(new UpdateTraineeTrainersResponse(DtoMapper.toTrainerShortDtoList(trainee.getTrainers())));
     }
 
-    /** 12. Get Trainee Trainings List (GET): every filter is optional. */
     @GetMapping("/{username}/trainings")
     @Operation(summary = "List this trainee's trainings, optionally filtered")
     @ApiResponse(responseCode = "200", description = "List returned")
@@ -142,7 +130,6 @@ public class TraineeController {
         return ResponseEntity.ok(DtoMapper.toTraineeTrainingDtoList(trainings));
     }
 
-    /** 15. Activate/De-activate Trainee (PATCH). */
     @PatchMapping("/{username}/status")
     @Operation(summary = "Activate or de-activate this trainee")
     @ApiResponse(responseCode = "200", description = "Status updated")
