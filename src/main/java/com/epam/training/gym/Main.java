@@ -1,7 +1,7 @@
 package com.epam.training.gym;
 
 import com.epam.training.gym.config.AppConfig;
-import com.epam.training.gym.dto.TrainingRequest;
+import com.epam.training.gym.dto.requests.TrainingRequest;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.NotFoundException;
 import com.epam.training.gym.exception.ValidationException;

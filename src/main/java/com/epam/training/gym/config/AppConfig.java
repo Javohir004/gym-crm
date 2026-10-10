@@ -6,7 +6,9 @@ import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -22,9 +24,17 @@ import java.util.Properties;
  * Root Spring configuration: component scan, property placeholders,
  * database connection (DataSource), Hibernate (EntityManagerFactory)
  * and transaction management.
+ * <p>
+ * Controllers are excluded here on purpose: they live in the child
+ * (web) context created by WebConfig, so they are not created twice
+ * and can see the DispatcherServlet-specific beans.
  */
 @Configuration
-@ComponentScan(basePackages = "com.epam.training.gym")
+@ComponentScan(basePackages = "com.epam.training.gym",
+        excludeFilters = {
+                @Filter(type = FilterType.REGEX, pattern = "com\\.epam\\.training\\.gym\\.controller\\..*"),
+                @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
+        })
 @PropertySource("classpath:application.properties")
 @EnableTransactionManagement
 public class AppConfig {

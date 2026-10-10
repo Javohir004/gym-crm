@@ -4,7 +4,7 @@ import com.epam.training.gym.dao.TraineeDao;
 import com.epam.training.gym.dao.TrainerDao;
 import com.epam.training.gym.dao.TrainingDao;
 import com.epam.training.gym.dao.TrainingTypeDao;
-import com.epam.training.gym.dto.TrainingRequest;
+import com.epam.training.gym.dto.requests.TrainingRequest;
 import com.epam.training.gym.exception.NotFoundException;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
@@ -56,6 +56,42 @@ public class TrainingService {
     @Autowired
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
+    }
+
+    /**
+     * REST "Add Training" (endpoint 14): the request carries no Training Type
+     * field, unlike the Hibernate-module version. The training's type is
+     * taken from the trainer's own specialization instead.
+     */
+    public Training addTraining(String username, String password, String traineeUsername, String trainerUsername,
+                                String trainingName, LocalDate trainingDate, Integer durationMinutes) {
+        authenticationService.authenticate(username, password);
+
+        Validation.requireText(traineeUsername, "Trainee username");
+        Validation.requireText(trainerUsername, "Trainer username");
+        Validation.requireText(trainingName, "Training name");
+        Validation.requireNotNull(trainingDate, "Training date");
+        Validation.requirePositive(durationMinutes, "Training duration");
+
+        Trainee trainee = traineeDao.findByUsername(traineeUsername)
+                .orElseThrow(() -> new NotFoundException("Trainee not found: " + traineeUsername));
+        Trainer trainer = trainerDao.findByUsername(trainerUsername)
+                .orElseThrow(() -> new NotFoundException("Trainer not found: " + trainerUsername));
+
+        Training training = Training.builder()
+                .trainee(trainee)
+                .trainer(trainer)
+                .trainingName(trainingName.trim())
+                .trainingType(trainer.getSpecialization())
+                .trainingDate(trainingDate)
+                .trainingDuration(durationMinutes)
+                .build();
+
+        Training saved = trainingDao.save(training);
+        log.info("Training added: name='{}' trainee={} trainer={} type={} date={} duration={}min",
+                saved.getTrainingName(), traineeUsername, trainerUsername,
+                trainer.getSpecialization().getTrainingTypeName(), saved.getTrainingDate(), saved.getTrainingDuration());
+        return saved;
     }
 
     public Training addTraining(String username, String password, TrainingRequest request) {

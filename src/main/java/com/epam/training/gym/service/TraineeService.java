@@ -98,6 +98,40 @@ public class TraineeService {
         return userAccountService.toggleActive(trainee.getUser());
     }
 
+    /** Used by the REST "Activate/De-activate Trainee" endpoint: sets an explicit value. */
+    public void setActive(String username, String password, boolean active) {
+        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        userAccountService.setActive(trainee.getUser(), active);
+    }
+
+    /**
+     * Used by the REST "Update Trainee Profile" endpoint: updates the profile
+     * fields AND sets Is Active explicitly in the same call (the REST request
+     * carries Is Active as a required field, unlike the Hibernate-module update).
+     */
+    public Trainee updateFullProfile(String username, String password, String firstName, String lastName,
+                                     LocalDate dateOfBirth, String address, boolean isActive) {
+        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Validation.requireText(firstName, "First name");
+        Validation.requireText(lastName, "Last name");
+
+        trainee.getUser().setFirstName(firstName.trim());
+        trainee.getUser().setLastName(lastName.trim());
+        trainee.getUser().setActive(isActive);
+        trainee.setDateOfBirth(dateOfBirth);
+        trainee.setAddress(address);
+        log.info("Updating trainee full profile: username={}", username);
+        return traineeDao.update(trainee);
+    }
+
+    /** Used by the REST "not assigned active trainers" endpoint (note 10). */
+    @Transactional(readOnly = true)
+    public List<Trainer> getUnassignedActiveTrainers(String username, String password) {
+        authenticationService.authenticateTrainee(username, password);
+        log.debug("Looking up active trainers not assigned to trainee username={}", username);
+        return trainerDao.findNotAssignedToTraineeActive(username);
+    }
+
     public void delete(String username, String password) {
         Trainee trainee = authenticationService.authenticateTrainee(username, password);
         traineeDao.delete(trainee);

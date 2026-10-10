@@ -2,7 +2,9 @@
 <configuration>
 
     <property name="LOG_DIR" value="logs"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"/>
+    <!-- %X{transactionId} comes from the MDC (see TransactionIdFilter); empty for
+         non-REST runs (Main.java, unit tests), filled in for every REST call. -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [txId=%X{transactionId}] %logger{36} - %msg%n"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

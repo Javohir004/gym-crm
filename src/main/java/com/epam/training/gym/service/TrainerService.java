@@ -92,6 +92,30 @@ public class TrainerService {
         return userAccountService.toggleActive(trainer.getUser());
     }
 
+    /** Used by the REST "Activate/De-activate Trainer" endpoint: sets an explicit value. */
+    public void setActive(String username, String password, boolean active) {
+        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+        userAccountService.setActive(trainer.getUser(), active);
+    }
+
+    /**
+     * Used by the REST "Update Trainer Profile" endpoint. Specialization is
+     * read-only on update (task note under endpoint 9), so it is never
+     * changed here even if the request carries a value for it.
+     */
+    public Trainer updateFullProfile(String username, String password,
+                                     String firstName, String lastName, boolean isActive) {
+        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+        Validation.requireText(firstName, "First name");
+        Validation.requireText(lastName, "Last name");
+
+        trainer.getUser().setFirstName(firstName.trim());
+        trainer.getUser().setLastName(lastName.trim());
+        trainer.getUser().setActive(isActive);
+        log.info("Updating trainer full profile: username={}", username);
+        return trainerDao.update(trainer);
+    }
+
     private TrainingType findTrainingType(String name) {
         return trainingTypeDao.findByName(name.trim())
                 .orElseThrow(() -> new NotFoundException("Training type not found: " + name));
