@@ -1,27 +1,48 @@
-# Gym CRM — Hibernate Module
+# Gym CRM
 
-Second task of the Gym CRM project. It is built on top of the Spring Core
-module: the in-memory storage (Maps + CSV files) was replaced with a real
-database accessed through **Hibernate**.
+A Gym CRM built in three stages: Spring Core (in-memory storage), Hibernate
+(real database), and a REST API on top. No Spring Boot anywhere — Spring
+Context/MVC and an embedded Tomcat are wired by hand.
 
 ## Tech stack
 
 - Java 21
-- Spring Context / Spring ORM 6.1.13 (Spring Core, no Spring Boot)
-- Hibernate ORM 6.5.3 (bootstrapped through JPA: `EntityManager`)
-- H2 2.2.224 (in-memory database) + HikariCP 5.1.0 (connection pool)
+- Spring Context / ORM / WebMVC 6.1.13
+- Hibernate ORM 6.5.3 (through JPA `EntityManager`)
+- H2 (in-memory) + HikariCP
+- Embedded Tomcat 10.1 (started manually, no Spring Boot)
+- Jackson (+ JSR-310 for `LocalDate`), Swagger annotations
 - Lombok, SLF4J + Logback
-- JUnit 5 + Mockito, JaCoCo (coverage)
+- JUnit 5 + Mockito, JaCoCo
 
-## What was done
+## Project structure
 
-- Database schema from the task mapped to JPA entities
-- DAO layer rewritten with `EntityManager` and JPQL
-- All 18 required functions implemented in the service layer
-- Authentication (username + password) before every function except "create profile"
-- Required-field validation before create/update
-- Transaction management with `@Transactional`
-- Logging (passwords are never logged) and unit + integration tests
+```
+model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
+dao/         EntityManager-based DAOs
+service/     Business logic, authentication, validation, @Transactional
+facade/      GymFacade — one method per required function
+controller/  @RestController classes — the 17 REST endpoints
+dto/
+  requests/  Request bodies
+  responses/ Response bodies
+exception/   Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
+logging/     TransactionIdFilter, RestCallLoggingFilter
+util/        Validation, BasicAuthUtil
+config/      AppConfig (DB/Hibernate/transactions), WebConfig (MVC)
+Main.java            demo for the Hibernate-module functions (console)
+RestApplication.java starts the embedded Tomcat + REST API
+postman/     Postman collection covering all 17 endpoints
+```
+
+## How to run
+
+```
+mvn clean test              # all tests + coverage report (target/site/jacoco/index.html)
+mvn compile exec:java       # starts the REST API (http://localhost:8081)
+```
+
+`Main.java` can also be run directly from the IDE for the Hibernate-module demo.
 
 ## Database schema
 
@@ -34,75 +55,106 @@ database accessed through **Hibernate**.
 | `training_type` | constant list (Fitness, Yoga, Zumba, Stretching, Resistance) |
 | `trainee_trainer` | join table for the many-to-many Trainee ↔ Trainer relation |
 
-Tables are created from the entities on startup (`hibernate.hbm2ddl.auto=create`).
-`import.sql` fills `training_type`; the application can only read it.
+Tables are (re)created from the entities on every startup (`hibernate.hbm2ddl.auto=create`).
+`import.sql` fills `training_type`; nothing in the app can change that list.
 
-## Project structure
+---
 
-```
-model/      JPA entities (User, Trainee, Trainer, Training, TrainingType)
-dao/        UserDao, TraineeDao, TrainerDao, TrainingDao, TrainingTypeDao
-service/    TraineeService, TrainerService, TrainingService,
-            AuthenticationService, UserAccountService,
-            UsernameGenerator, PasswordGenerator
-facade/     GymFacade — one method per required function
-exception/  AuthenticationException, ValidationException, NotFoundException
-dto/        TrainingRequest
-util/       Validation
-config/     AppConfig (DataSource, EntityManagerFactory, TransactionManager)
-Main.java   demo that runs all 18 functions
-```
+## Module 2 — Hibernate (console demo, 18 functions)
 
-Flow: `Main → GymFacade → Service (@Transactional) → DAO (EntityManager) → H2`
+`Main.java` runs all 18 functions end to end and logs the result of each one.
+Username/password generation, authentication, validation, cascade delete and
+`@Transactional` all work the same way the REST module (below) uses them.
 
-## The 18 functions
+- **Username / password:** `firstName.lastName`, a serial number added if taken
+  (`John.Doe1`). Password: random 10 characters (`SecureRandom`).
+- **Delete Trainee:** hard delete; the user row and all its trainings are
+  deleted too (cascade).
+- Here, Activate/De-activate simply **flips** the current state (`toggleActive`).
 
-| # | Function | Method |
+---
+
+## Module 3 — REST API (17 endpoints)
+
+Base URL: `http://localhost:8081/api`. Full request/response examples for
+every endpoint are in `postman/GymCRM.postman_collection.json` — import it
+into Postman and run the requests top to bottom (registration requests
+auto-save the generated username/password for the rest of the collection).
+
+### Authentication
+
+Every endpoint except registration (1, 2) and "Get Training types" (17) requires
+**HTTP Basic Auth** (`Authorization: Basic base64(username:password)`). The
+task's own per-endpoint "Request" fields rarely repeat the password, so it
+travels in this standard header instead, uniformly, for every authenticated
+call.
+
+### Endpoints
+
+| # | Function | Method + path |
 |---|---|---|
-| 1, 2 | Create Trainer / Trainee | `createTrainer`, `createTrainee` |
-| 3, 4 | Username + password matching | `traineeCredentialsMatch`, `trainerCredentialsMatch` |
-| 5, 6 | Select profile by username | `getTrainer`, `getTrainee` |
-| 7, 8 | Change password | `changeTraineePassword`, `changeTrainerPassword` |
-| 9, 10 | Update profile | `updateTrainer`, `updateTrainee` |
-| 11, 12 | Activate / De-activate | `toggleTraineeActive`, `toggleTrainerActive` |
-| 13 | Delete Trainee by username | `deleteTrainee` |
-| 14, 15 | Trainings list with criteria | `getTraineeTrainings`, `getTrainerTrainings` |
-| 16 | Add training | `addTraining` |
-| 17 | Trainers not assigned to a trainee | `getUnassignedTrainers` |
-| 18 | Update trainee's trainers list | `updateTraineeTrainers` |
+| 1 | Trainer Registration | `POST /trainers` |
+| 2 | Trainee Registration | `POST /trainees` |
+| 3 | Login | `GET /login?username=&password=` |
+| 4 | Change Login | `PUT /login` |
+| 5 | Get Trainee Profile | `GET /trainees/{username}` |
+| 6 | Update Trainee Profile | `PUT /trainees/{username}` |
+| 7 | Delete Trainee Profile | `DELETE /trainees/{username}` |
+| 8 | Get Trainer Profile | `GET /trainers/{username}` |
+| 9 | Update Trainer Profile | `PUT /trainers/{username}` |
+| 10 | Not-assigned active trainers | `GET /trainees/{username}/unassigned-trainers` |
+| 11 | Update Trainee's Trainer List | `PUT /trainees/{username}/trainers` |
+| 12 | Get Trainee Trainings List | `GET /trainees/{username}/trainings` |
+| 13 | Get Trainer Trainings List | `GET /trainers/{username}/trainings` |
+| 14 | Add Training | `POST /trainings` |
+| 15 | Activate/De-activate Trainee | `PATCH /trainees/{username}/status` |
+| 16 | Activate/De-activate Trainer | `PATCH /trainers/{username}/status` |
+| 17 | Get Training types | `GET /training-types` |
 
-## Main rules
+### Design decisions worth knowing
 
-- **Username / password:** `firstName.lastName`; a serial number is added if taken
-  (`John.Doe1`). Password is a random 10-character string (`SecureRandom`).
-- **Delete Trainee:** hard delete; the user row and all trainings are deleted too (cascade).
-- **Activate / De-activate:** not idempotent — every call switches the current state.
-- **Filters** in functions 14 and 15 are all optional; a missing filter is simply skipped.
-
-## How to run
-
-```
-mvn clean test     # 175 tests + coverage report (target/site/jacoco/index.html)
-```
-
-or run `Main.java` from the IDE. Logs go to the console and to `logs/gym-crm.log`.
+- **Add Training (14) has no Training Type field.** The task's own request
+  fields for this endpoint omit it, so the training's type is taken from the
+  **trainer's own specialization** instead.
+- **Update Trainer Profile (9): specialization is read-only.** The request
+  may carry a value for it, but it is always ignored.
+- **Activate/De-activate (15, 16) is not idempotent (task note 9), on
+  purpose.** Unlike the Hibernate-module demo's `toggleActive`, the REST
+  endpoints take an explicit `isActive` value — but calling it with the
+  state the resource is **already** in returns **409 Conflict** rather than
+  silently succeeding.
+- **Get Training types (17) needs no authentication.** Its own request
+  description says "no data"; it is a small, public, constant list.
+- **Error handling:** every exception maps to the same JSON shape
+  (`message`, `status`, `transactionId`) via one `@RestControllerAdvice` —
+  400 (validation), 401 (auth), 404 (not found), 409 (conflict), 500 (anything else, logged
+  server-side only, never leaked to the client).
+- **Logging (task note 17):** `TransactionIdFilter` gives every request a
+  UUID, carried through every log line for that request (and returned as
+  the `X-Transaction-Id` response header, so it could be forwarded to a
+  downstream service). `RestCallLoggingFilter` logs which endpoint was
+  called and the final status code.
+- **Swagger:** every controller method carries `@Operation`/`@ApiResponse`
+  annotations (task note 19). No Swagger UI is served — a UI server is
+  tightly coupled to Spring Boot's auto-configuration, so it was left out
+  rather than fought with; a Postman collection covers manual testing instead.
+- **No Spring Boot:** an embedded Tomcat is started by hand in
+  `RestApplication.java`, with a `DispatcherServlet` wired to a child
+  `WebApplicationContext` (`WebConfig`) whose parent is the business-layer
+  context (`AppConfig`).
 
 ## Tests
 
-175 tests, all passing. Line coverage is **81.5%** overall (every class is at 100%
-except `Main`, the demo entry point). Service tests use Mockito; DAO and
-end-to-end tests run against a real in-memory H2 database.
+All tests pass; line coverage is **96.6%** (JaCoCo excludes `Main` and
+`RestApplication` — they start a real server/console demo and are not
+realistic to unit test, the same way a `main()` method usually is).
 
-## Design notes
-
-- **Why Training and Training Type are separate tables (one-to-many).**
-  Training types are a small fixed list. Keeping them in their own table means the
-  name is stored once instead of being repeated (and possibly misspelled) in every
-  training row, a type can be renamed in one place, and Trainer specialization
-  reuses the same list. One type has many trainings, hence one-to-many.
-- **`EntityManager` instead of `SessionFactory`:** Spring 6 recommends bootstrapping
-  Hibernate through JPA; Hibernate is still the implementation underneath.
-- **Own profile only:** every function works on the authenticated user's own profile.
-- **Trainer / trainee name filter:** case-insensitive, matches part of "first last".
-- **Passwords are stored as plain text** because the task does not ask for hashing;
-  a real system would hash them (e.g. BCrypt).
+- **Service layer:** Mockito-based unit tests.
+- **DAO layer:** `DaoIntegrationTest` runs every DAO against a real H2
+  database through the actual Spring context; each test runs in its own
+  transaction, rolled back automatically afterwards.
+- **Controllers:** `MockMvc` (standalone setup, `GlobalExceptionHandler`
+  registered) — success paths, missing/invalid auth, validation errors,
+  not-found and conflict cases.
+- **Logging filters:** direct unit tests (MDC content, response header,
+  log output).
