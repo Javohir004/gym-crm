@@ -1,85 +1,29 @@
 package service;
 
-import com.epam.training.gym.dao.TraineeDao;
-import com.epam.training.gym.dao.TrainerDao;
+import com.epam.training.gym.dao.UserDao;
+import com.epam.training.gym.exception.ValidationException;
 import com.epam.training.gym.service.UsernameGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class UsernameGeneratorTest {
-
-    @Mock
-    private TraineeDao traineeDao;
-
-    @Mock
-    private TrainerDao trainerDao;
-
-    private UsernameGenerator usernameGenerator;
-
-    @BeforeEach
-    void setUp() {
-        usernameGenerator = new UsernameGenerator();
-        usernameGenerator.setTraineeDao(traineeDao);
-        usernameGenerator.setTrainerDao(trainerDao);
+    private UserDao dao;
+    private UsernameGenerator generator;
+    @BeforeEach void setup() { dao = mock(UserDao.class); generator = new UsernameGenerator(); generator.setUserDao(dao); }
+    @Test void generatesBaseWhenAvailable() {
+        when(dao.findUsernamesStartingWith("Jane.Doe")).thenReturn(List.of());
+        assertEquals("Jane.Doe", generator.generate(" Jane ", "Doe"));
     }
-
-    @Test
-    void generate_returnsBaseUsername_whenNotTaken() {
-        when(traineeDao.getAllUsernames()).thenReturn(Set.of());
-        when(trainerDao.getAllUsernames()).thenReturn(Set.of());
-
-        String username = usernameGenerator.generate("John", "Smith");
-
-        assertEquals("John.Smith", username);
+    @Test void appendsFirstFreeSerialWhenNameTaken() {
+        when(dao.findUsernamesStartingWith("Jane.Doe")).thenReturn(List.of("Jane.Doe", "Jane.Doe1", "Jane.Doe3"));
+        assertEquals("Jane.Doe2", generator.generate("Jane", "Doe"));
     }
-
-    @Test
-    void generate_appendsSerial_whenBaseUsernameTaken() {
-        when(traineeDao.getAllUsernames()).thenReturn(Set.of("John.Smith"));
-        when(trainerDao.getAllUsernames()).thenReturn(Set.of());
-
-        String username = usernameGenerator.generate("John", "Smith");
-
-        assertEquals("John.Smith1", username);
-    }
-
-    @Test
-    void generate_incrementsSerial_untilFreeSlotFound() {
-        when(traineeDao.getAllUsernames()).thenReturn(Set.of("John.Smith", "John.Smith1", "John.Smith2"));
-        when(trainerDao.getAllUsernames()).thenReturn(Set.of());
-
-        String username = usernameGenerator.generate("John", "Smith");
-
-        assertEquals("John.Smith3", username);
-    }
-
-    @Test
-    void generate_checksUniquenessAcrossTraineesAndTrainers() {
-        when(traineeDao.getAllUsernames()).thenReturn(Set.of());
-        when(trainerDao.getAllUsernames()).thenReturn(Set.of("John.Smith"));
-
-        String username = usernameGenerator.generate("John", "Smith");
-
-        assertEquals("John.Smith1", username);
-    }
-
-    @Test
-    void generate_throwsException_whenFirstNameBlank() {
-        assertThrows(IllegalArgumentException.class, () -> usernameGenerator.generate(" ", "Smith"));
-    }
-
-    @Test
-    void generate_throwsException_whenLastNameNull() {
-        assertThrows(IllegalArgumentException.class, () -> usernameGenerator.generate("John", null));
-    }
+    @Test void rejectsBlankName() { assertThrows(ValidationException.class, () -> generator.generate(" ", "Doe")); }
 }

@@ -1,22 +1,45 @@
 package com.epam.training.gym.model;
 
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.ToString;
 
+
+@Entity
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
-@SuperBuilder
-@EqualsAndHashCode(of = {"userId", "username"})
-public abstract class User {
+@AllArgsConstructor
+@Builder
+@ToString(exclude = "password")
+public class User {
 
-    private Long userId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "first_name", nullable = false)
     private String firstName;
+
+    @Column(name = "last_name", nullable = false)
     private String lastName;
+
+    @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
     private String password;
-    private boolean isActive;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean active;
 }

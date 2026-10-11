@@ -10,15 +10,22 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring.version>6.1.13</spring.version>
+        <hibernate.version>6.5.3.Final</hibernate.version>
+        <h2.version>2.2.224</h2.version>
+        <hikari.version>5.1.0</hikari.version>
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.8</logback.version>
         <junit.version>5.11.0</junit.version>
         <mockito.version>5.13.0</mockito.version>
+
+        <tomcat.version>10.1.30</tomcat.version>
+        <jackson.version>2.17.2</jackson.version>
+        <swagger.version>2.2.25</swagger.version>
     </properties>
 
     <dependencies>
@@ -29,6 +36,80 @@
             <version>${spring.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikari.version}</version>
+        </dependency>
+
+
+        <!-- Spring MVC: @RestController, DispatcherServlet, @RequestMapping etc. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <!-- Servlet API: needed to implement WebApplicationInitializer. "provided" because
+             the embedded Tomcat below already brings its own copy at runtime. -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Embedded Tomcat: we start/stop it ourselves from Main, no Spring Boot involved -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>${tomcat.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <version>${tomcat.version}</version>
+        </dependency>
+
+        <!-- JSON (request/response bodies) + LocalDate support -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- Swagger annotations only (no UI server) - task note 19 -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>${swagger.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -61,6 +142,31 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- MockMvc: lets controller tests call endpoints without a running server -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- MockMvc's result matchers (e.g. content(), status()) reference Hamcrest's
+             Matcher type even when we don't call Hamcrest directly. -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Needed at runtime by MockMvc's jsonPath(...) assertions. -->
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.9.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -72,15 +178,44 @@
 
     <build>
         <plugins>
+            <!-- Needed so Spring can read @RequestParam/@PathVariable names
+                 (e.g. "username") straight from the method signature, without
+                 having to write @RequestParam("username") everywhere. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
             </plugin>
+            <!-- Lets us start the REST server with: mvn compile exec:java -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <mainClass>com.epam.training.gym.RestApplication</mainClass>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <configuration>
+                    <!-- Entry points that start a real embedded Tomcat / run the
+                         demo - not realistic to unit test, excluded from coverage
+                         the same way a main() class usually is. -->
+                    <excludes>
+                        <exclude>com/epam/training/gym/Main.class</exclude>
+                        <exclude>com/epam/training/gym/RestApplication.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
