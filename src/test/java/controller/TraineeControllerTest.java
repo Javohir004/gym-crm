@@ -1,7 +1,6 @@
 package controller;
 
 import com.epam.training.gym.controller.TraineeController;
-import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
 import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainee;
