@@ -1,5 +1,6 @@
 package com.epam.training.gym.controller;
 
+
 import com.epam.training.gym.dto.DtoMapper;
 import com.epam.training.gym.dto.TraineeTrainingDto;
 import com.epam.training.gym.dto.TrainerShortDto;
@@ -15,6 +16,7 @@ import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.util.BasicAuthUtil;
+import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -48,6 +50,7 @@ public class TraineeController {
         this.facade = facade;
     }
 
+
     @PostMapping
     @Operation(summary = "Register a new Trainee")
     @ApiResponse(responseCode = "201", description = "Trainee created")
@@ -79,8 +82,9 @@ public class TraineeController {
     public ResponseEntity<UpdateTraineeProfileResponse> updateProfile(
             @PathVariable String username, @RequestBody UpdateTraineeProfileRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
+        Validation.requireNotNull(body.isActive(), "Is Active");
         Trainee trainee = facade.updateTraineeProfile(username, password, body.firstName(), body.lastName(),
-                body.dateOfBirth(), body.address(), Boolean.TRUE.equals(body.isActive()));
+                body.dateOfBirth(), body.address(), body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTraineeProfileResponse(trainee));
     }
 
@@ -136,7 +140,8 @@ public class TraineeController {
     public ResponseEntity<Void> setActive(
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
-        facade.setTraineeActive(username, password, Boolean.TRUE.equals(body.isActive()));
+        Validation.requireNotNull(body.isActive(), "Is Active");
+        facade.setTraineeActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
     }
 

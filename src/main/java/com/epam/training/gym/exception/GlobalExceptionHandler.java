@@ -30,6 +30,11 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException e) {
+        return respond(HttpStatus.CONFLICT, e.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         return respond(HttpStatus.BAD_REQUEST, e.getMessage());

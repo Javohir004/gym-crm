@@ -11,6 +11,7 @@ import com.epam.training.gym.model.TrainingType;
 
 import java.util.List;
 
+
 public final class DtoMapper {
 
     private DtoMapper() {
@@ -104,7 +105,7 @@ public final class DtoMapper {
     public static List<TrainerTrainingDto> toTrainerTrainingDtoList(List<Training> trainings) {
         return toList(trainings, DtoMapper::toTrainerTrainingDto);
     }
-                                                                      // shu yerda training type id ni id ga almashtirdim
+
     public static TrainingTypeDto toTrainingTypeDto(TrainingType trainingType) {
         return new TrainingTypeDto(trainingType.getTrainingTypeName(), trainingType.getId());
     }

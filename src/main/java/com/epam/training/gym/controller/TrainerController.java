@@ -12,6 +12,7 @@ import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.util.BasicAuthUtil;
+import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,7 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-
+/**
+ * Endpoints 1, 8, 9, 13, 16 - everything about Trainer profiles.
+ */
 @RestController
 @RequestMapping("/api/trainers")
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
@@ -74,8 +77,9 @@ public class TrainerController {
     public ResponseEntity<UpdateTrainerProfileResponse> updateProfile(
             @PathVariable String username, @RequestBody UpdateTrainerProfileRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
+        Validation.requireNotNull(body.isActive(), "Is Active");
         Trainer trainer = facade.updateTrainerProfile(username, password, body.firstName(), body.lastName(),
-                Boolean.TRUE.equals(body.isActive()));
+                body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTrainerProfileResponse(trainer));
     }
 
@@ -93,13 +97,15 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
+    /** 16. Activate/De-activate Trainer (PATCH). */
     @PatchMapping("/{username}/status")
     @Operation(summary = "Activate or de-activate this trainer")
     @ApiResponse(responseCode = "200", description = "Status updated")
     public ResponseEntity<Void> setActive(
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
-        facade.setTrainerActive(username, password, Boolean.TRUE.equals(body.isActive()));
+        Validation.requireNotNull(body.isActive(), "Is Active");
+        facade.setTrainerActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
     }
 

@@ -1,6 +1,7 @@
 package com.epam.training.gym.service;
 
 import com.epam.training.gym.dao.UserDao;
+import com.epam.training.gym.exception.ConflictException;
 import com.epam.training.gym.model.User;
 import com.epam.training.gym.util.Validation;
 import org.slf4j.Logger;
@@ -55,9 +56,11 @@ public class UserAccountService {
         log.info("Password changed for username={}", user.getUsername());
     }
 
-
-
     public void setActive(User user, boolean active) {
+        if (user.isActive() == active) {
+            throw new ConflictException("User '" + user.getUsername() + "' is already "
+                    + (active ? "active" : "inactive"));
+        }
         user.setActive(active);
         userDao.update(user);
         log.info("User username={} is now {}", user.getUsername(), active ? "active" : "inactive");
