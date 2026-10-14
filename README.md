@@ -1,48 +1,103 @@
 # Gym CRM
 
-A Gym CRM built in three stages: Spring Core (in-memory storage), Hibernate
-(real database), and a REST API on top. No Spring Boot anywhere — Spring
-Context/MVC and an embedded Tomcat are wired by hand.
+A Gym CRM built in stages: Spring Core, Hibernate (real database), a REST API,
+and finally **Spring Boot** with Actuator, custom health indicators, custom
+Prometheus metrics, Swagger UI and environment profiles
+(`local`, `dev`, `stg`, `prod`).
 
 ## Tech stack
 
 - Java 21
-- Spring Context / ORM / WebMVC 6.1.13
-- Hibernate ORM 6.5.3 (through JPA `EntityManager`)
-- H2 (in-memory) + HikariCP
-- Embedded Tomcat 10.1 (started manually, no Spring Boot)
-- Jackson (+ JSR-310 for `LocalDate`), Swagger annotations
-- Lombok, SLF4J + Logback
-- JUnit 5 + Mockito, JaCoCo
+- Spring Boot 3.3.4 (Spring Framework 6.1.13, Hibernate ORM 6.5.3 via JPA `EntityManager`)
+- Spring Web MVC (embedded Tomcat), Spring Data JPA starter (Hibernate + HikariCP + transactions)
+- Spring Boot Actuator + Micrometer Prometheus registry
+- Spring AOP (metrics aspect)
+- H2 database (in-memory or file, depending on the profile)
+- springdoc-openapi (Swagger UI)
+- Jackson (+ JSR-310 for `LocalDate`), Lombok, SLF4J + Logback
+- JUnit 5 + Mockito + Spring Boot Test, JaCoCo
 
 ## Project structure
 
 ```
-model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
-dao/         EntityManager-based DAOs
-service/     Business logic, authentication, validation, @Transactional
-facade/      GymFacade — one method per required function
-controller/  @RestController classes — the 17 REST endpoints
-dto/
-  requests/  Request bodies
-  responses/ Response bodies
-exception/   Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
-logging/     TransactionIdFilter, RestCallLoggingFilter
-util/        Validation, BasicAuthUtil
-config/      AppConfig (DB/Hibernate/transactions), WebConfig (MVC)
-Main.java            demo for the Hibernate-module functions (console)
-RestApplication.java starts the embedded Tomcat + REST API
-postman/     Postman collection covering all 17 endpoints
+src/main/java/com/epam/training/gym/
+  GymCrmApplication.java   @SpringBootApplication entry point
+  model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
+  dao/         EntityManager-based DAOs
+  service/     Business logic, authentication, validation, @Transactional
+  facade/      GymFacade - one method per required function
+  controller/  @RestController classes - the 17 REST endpoints
+  dto/
+    requests/  Request bodies
+    responses/ Response bodies
+  exception/   Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
+  logging/     TransactionIdFilter, RestCallLoggingFilter
+  health/      Custom Actuator health indicators
+  metrics/     GymMetrics (Micrometer meters) + GymMetricsAspect
+  config/      OpenApiConfig (Swagger / Basic Auth scheme)
+  util/        Validation, BasicAuthUtil
+
+src/main/resources/
+  application.properties            common settings (default profile: local)
+  application-local.properties
+  application-dev.properties
+  application-stg.properties
+  application-prod.properties
+  data.sql                          training types (idempotent MERGE)
+  logback.xml                       log pattern with the transaction id
+
+postman/       Postman collections
 ```
 
 ## How to run
 
 ```
-mvn clean test              # all tests + coverage report (target/site/jacoco/index.html)
-mvn compile exec:java       # starts the REST API (http://localhost:8081)
+mvn clean test                                          # all tests + coverage report (target/site/jacoco/index.html)
+mvn spring-boot:run                                     # profile "local" (default), http://localhost:8081
+mvn spring-boot:run -Dspring-boot.run.profiles=dev      # another profile
 ```
 
-`Main.java` can also be run directly from the IDE for the Hibernate-module demo.
+From the IDE: run `GymCrmApplication`; set **Active profiles** in the run
+configuration to pick a profile.
+
+From the packaged jar:
+
+```
+mvn clean package
+java -jar target/gym-crm-app-1.0-SNAPSHOT.jar --spring.profiles.active=dev
+```
+
+The profile can also be set with the `SPRING_PROFILES_ACTIVE` environment
+variable. The startup log confirms the choice:
+`The following 1 profile is active: "dev"`.
+
+## Environments (Spring profiles)
+
+The default profile is `local` (`spring.profiles.active=local` in
+`application.properties`). Each profile has its own database properties.
+
+| | `local` | `dev` | `stg` | `prod` |
+|---|---|---|---|---|
+| Database URL | `jdbc:h2:mem:gymdb-local` | `jdbc:h2:file:./data/gymdb-dev` | `jdbc:h2:file:./data/gymdb-stg` | `jdbc:h2:file:./data/gymdb-prod` |
+| Credentials | `sa` / empty | `sa` / empty | `DB_USERNAME` / `DB_PASSWORD` (defaults for local testing) | `DB_USERNAME` / `DB_PASSWORD` **required** |
+| Hikari max pool size | 5 | 5 | 10 | 20 |
+| `hibernate.ddl-auto` | `create` (clean DB on every start) | `update` | `update` | `update` |
+| SQL in the log | yes (formatted) | no | no | no |
+| App log level (`com.epam.training.gym`) | DEBUG | DEBUG | INFO | INFO |
+| Actuator endpoints | health, info, metrics, prometheus | same | same | health, prometheus only |
+| Health details | shown | shown | shown | hidden |
+| Swagger UI | on | on | on | **off** |
+
+Notes:
+
+- In `prod` the credentials have no defaults on purpose: the application
+  refuses to start if `DB_USERNAME` / `DB_PASSWORD` are missing.
+- The H2 files are created in the `data/` folder (git-ignored). With the
+  `update` mode a fresh file database gets its tables on the first start; to
+  reset a `dev` / `stg` / `prod` database, stop the app and delete its file
+  in `data/`.
+- H2 is used in every profile. For a real deployment only the `spring.datasource.*`
+  properties would change.
 
 ## Database schema
 
@@ -53,48 +108,95 @@ mvn compile exec:java       # starts the REST API (http://localhost:8081)
 | `trainer` | `specialization_id` (FK to `training_type`), `user_id` (FK, one-to-one) |
 | `training` | FKs to trainee, trainer and training type; name, date, duration |
 | `training_type` | constant list (Fitness, Yoga, Zumba, Stretching, Resistance) |
-| `trainee_trainer` | join table for the many-to-many Trainee ↔ Trainer relation |
+| `trainee_trainer` | join table for the many-to-many Trainee <-> Trainer relation |
 
-Tables are (re)created from the entities on every startup (`hibernate.hbm2ddl.auto=create`).
-`import.sql` fills `training_type`; nothing in the app can change that list.
-
----
-
-## Module 2 — Hibernate (console demo, 18 functions)
-
-`Main.java` runs all 18 functions end to end and logs the result of each one.
-Username/password generation, authentication, validation, cascade delete and
-`@Transactional` all work the same way the REST module (below) uses them.
-
-- **Username / password:** `firstName.lastName`, a serial number added if taken
-  (`John.Doe1`). Password: random 10 characters (`SecureRandom`).
-- **Delete Trainee:** hard delete; the user row and all its trainings are
-  deleted too (cascade).
-- Here, Activate/De-activate simply **flips** the current state (`toggleActive`).
+`data.sql` fills `training_type` on every start. It uses `MERGE ... KEY`, so
+running it again never creates duplicates (this works with every
+`ddl-auto` mode). Nothing in the application can change that list.
 
 ---
 
-## Module 3 — REST API (17 endpoints)
+## Actuator, health indicators and metrics
 
-Base URL: `http://localhost:8081/api`. Full request/response examples for
-every endpoint are in `postman/GymCRM.postman_collection.json` — import it
-into Postman and run the requests top to bottom (registration requests
-auto-save the generated username/password for the rest of the collection).
+Base URL: `http://localhost:8081/actuator`
+
+| Endpoint | Purpose |
+|---|---|
+| `/actuator/health` | health status with all indicators |
+| `/actuator/metrics` | Micrometer metrics (JSON) |
+| `/actuator/prometheus` | metrics in Prometheus format |
+
+### Custom health indicators
+
+| Indicator (name in `/health`) | Behaviour |
+|---|---|
+| `trainingTypes` | `UP` with the number of training types; `DOWN` if the table is empty (e.g. `data.sql` did not run) or cannot be read |
+| `trainerAvailability` | `UP` with total / active / inactive trainer counts; `UNKNOWN` (a warning, the overall status stays `UP`) when trainers exist but all are inactive |
+| `databaseResponseTime` | `UP` with the connection check time; `OUT_OF_SERVICE` if slower than `gym.health.db-slow-threshold-ms` (default 500); `DOWN` if no valid connection |
+
+Spring Boot's own `db`, `diskSpace` and `ping` indicators run alongside them.
+
+### Custom Prometheus metrics
+
+| Prometheus name | Type | Meaning |
+|---|---|---|
+| `gym_registrations_total{role="trainee"}` | counter | registered trainees |
+| `gym_registrations_total{role="trainer"}` | counter | registered trainers |
+| `gym_trainings_added_total` | counter | trainings added |
+| `gym_authentication_failures_total` | counter | failed credential checks in `AuthenticationService` |
+| `gym_trainers_active` | gauge | current number of active trainers (read from the DB on each scrape) |
+
+The counters are updated by `GymMetricsAspect` (Spring AOP), so the service
+code is untouched. The aspect runs outside the transaction (`@Order(0)`), so a
+registration is counted only after it was committed successfully. All
+metrics also carry the `application="gym-crm"` tag.
+
+Example Prometheus scrape config:
+
+```yaml
+scrape_configs:
+  - job_name: gym-crm
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['localhost:8081']
+```
+
+---
+
+## REST API (17 endpoints)
+
+Base URL: `http://localhost:8081/api`
+
+### Swagger UI
+
+- UI: `http://localhost:8081/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8081/v3/api-docs`
+
+Click **Authorize** and enter a username and password to call the protected
+endpoints (HTTP Basic). Swagger is disabled in the `prod` profile.
+
+### Postman
+
+Import `postman/GymCRM.postman_collection.json` for the 17 endpoints, or
+`postman/GymCRM_TestScenario.postman_collection.json` for a ready end-to-end
+scenario (registration requests save the generated username/password into
+collection variables; the collection also checks the health indicators and
+the custom metrics). Run it with the Collection Runner.
 
 ### Authentication
 
-Every endpoint except registration (1, 2) and "Get Training types" (17) requires
-**HTTP Basic Auth** (`Authorization: Basic base64(username:password)`). The
-task's own per-endpoint "Request" fields rarely repeat the password, so it
-travels in this standard header instead, uniformly, for every authenticated
-call.
+Every endpoint except registration (1, 2), login (3, 4) and "Get Training
+types" (17) requires **HTTP Basic Auth**
+(`Authorization: Basic base64(username:password)`). The username in the
+path must be the authenticated user, otherwise the call is rejected with 401.
+Actuator and Swagger endpoints are not behind this check.
 
 ### Endpoints
 
 | # | Function | Method + path |
 |---|---|---|
-| 1 | Trainer Registration | `POST /trainers` |
-| 2 | Trainee Registration | `POST /trainees` |
+| 1 | Trainee Registration | `POST /trainees` |
+| 2 | Trainer Registration | `POST /trainers` |
 | 3 | Login | `GET /login?username=&password=` |
 | 4 | Change Login | `PUT /login` |
 | 5 | Get Trainee Profile | `GET /trainees/{username}` |
@@ -113,48 +215,52 @@ call.
 
 ### Design decisions worth knowing
 
-- **Add Training (14) has no Training Type field.** The task's own request
-  fields for this endpoint omit it, so the training's type is taken from the
-  **trainer's own specialization** instead.
-- **Update Trainer Profile (9): specialization is read-only.** The request
-  may carry a value for it, but it is always ignored.
-- **Activate/De-activate (15, 16) is not idempotent (task note 9), on
-  purpose.** Unlike the Hibernate-module demo's `toggleActive`, the REST
-  endpoints take an explicit `isActive` value — but calling it with the
-  state the resource is **already** in returns **409 Conflict** rather than
-  silently succeeding.
-- **Get Training types (17) needs no authentication.** Its own request
-  description says "no data"; it is a small, public, constant list.
+- **Username / password:** `firstName.lastName`, a serial number added if the
+  name is taken (`John.Doe1`). Password: random 10 characters (`SecureRandom`).
+- **Add Training (14) has no Training Type field.** The training's type is
+  taken from the **trainer's own specialization**.
+- **Update Trainer Profile (9): specialization is read-only.** The request may
+  carry a value for it, but it is always ignored.
+- **Activate/De-activate (15, 16) is not idempotent, on purpose.** The
+  endpoints take an explicit `isActive` value, but calling them with the
+  state the resource is **already** in returns **409 Conflict**.
+- **Delete Trainee (7):** hard delete; the user row and all of the trainee's
+  trainings are deleted too (cascade).
+- **Get Training types (17) needs no authentication.** It is a small, public,
+  constant list.
 - **Error handling:** every exception maps to the same JSON shape
-  (`message`, `status`, `transactionId`) via one `@RestControllerAdvice` —
-  400 (validation), 401 (auth), 404 (not found), 409 (conflict), 500 (anything else, logged
+  (`message`, `status`, `transactionId`) via one `@RestControllerAdvice`:
+  400 (validation), 401 (auth), 404 (not found, including unknown URLs),
+  405 (wrong HTTP method), 409 (conflict), 500 (anything else, logged
   server-side only, never leaked to the client).
-- **Logging (task note 17):** `TransactionIdFilter` gives every request a
-  UUID, carried through every log line for that request (and returned as
-  the `X-Transaction-Id` response header, so it could be forwarded to a
-  downstream service). `RestCallLoggingFilter` logs which endpoint was
-  called and the final status code.
-- **Swagger:** every controller method carries `@Operation`/`@ApiResponse`
-  annotations (task note 19). No Swagger UI is served — a UI server is
-  tightly coupled to Spring Boot's auto-configuration, so it was left out
-  rather than fought with; a Postman collection covers manual testing instead.
-- **No Spring Boot:** an embedded Tomcat is started by hand in
-  `RestApplication.java`, with a `DispatcherServlet` wired to a child
-  `WebApplicationContext` (`WebConfig`) whose parent is the business-layer
-  context (`AppConfig`).
+- **Logging:** `TransactionIdFilter` gives every request a UUID, carried
+  through every log line of that request (the `[txId=...]` part of the log
+  pattern) and returned as the `X-Transaction-Id` response header.
+  `RestCallLoggingFilter` logs which endpoint was called and the final
+  status code. Both are `@Component` filters registered by Spring Boot.
 
 ## Tests
 
-All tests pass; line coverage is **96.6%** (JaCoCo excludes `Main` and
-`RestApplication` — they start a real server/console demo and are not
-realistic to unit test, the same way a `main()` method usually is).
+Run `mvn clean test`. The JaCoCo report is in `target/site/jacoco/index.html`
+(`GymCrmApplication` is excluded - it only starts the application).
+
+Instruction coverage: **97%** (3,506 of 3,612 instructions covered).
 
 - **Service layer:** Mockito-based unit tests.
 - **DAO layer:** `DaoIntegrationTest` runs every DAO against a real H2
-  database through the actual Spring context; each test runs in its own
-  transaction, rolled back automatically afterwards.
+  database through the Spring Boot context (`@SpringBootTest`, profile
+  `local`); each test runs in its own transaction, rolled back afterwards.
 - **Controllers:** `MockMvc` (standalone setup, `GlobalExceptionHandler`
-  registered) — success paths, missing/invalid auth, validation errors,
-  not-found and conflict cases.
+  registered) - success paths, missing/invalid auth, validation errors,
+  not-found and conflict cases; `GlobalExceptionHandlerHttpErrorsTest` covers
+  the 404 / 405 mapping.
 - **Logging filters:** direct unit tests (MDC content, response header,
   log output).
+- **Health indicators:** unit tests for all three custom indicators (UP /
+  DOWN / warning states).
+- **Metrics:** `GymMetricsTest` and `GymMetricsAspectTest` (unit);
+  `MetricsIntegrationTest` sends real HTTP requests through the Spring
+  proxies and checks that the counters move.
+- **Actuator and Swagger:** `ActuatorIntegrationTest` checks `/actuator/health`
+  and `/actuator/prometheus`; `OpenApiConfigTest` and `OpenApiIntegrationTest`
+  check the Swagger configuration and `/v3/api-docs`.
