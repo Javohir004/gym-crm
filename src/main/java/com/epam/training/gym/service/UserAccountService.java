@@ -72,4 +72,5 @@ public class UserAccountService {
         log.info("User username={} is now {}", user.getUsername(), user.isActive() ? "active" : "inactive");
         return user.isActive();
     }
+
 }
