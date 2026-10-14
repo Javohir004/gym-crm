@@ -40,3 +40,6 @@ build/
 
 ### Application logs ###
 logs/
+
+### H2 database files (dev/stg/prod profiles) ###
+data/

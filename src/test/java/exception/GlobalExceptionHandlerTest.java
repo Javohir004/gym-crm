@@ -11,11 +11,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class GlobalExceptionHandlerTest {
@@ -80,5 +82,21 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(500, response.getBody().status());
         assertFalse(response.getBody().message().contains("hunter2"));
+    }
+
+    @Test
+    void unknownResource_returns404_notServerError() {
+        var response = handler.handleNoResource(new NoResourceFoundException(HttpMethod.GET, "/favicon.ico"));
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void wrongHttpMethod_returns405_notServerError() {
+        var response = handler.handleMethodNotSupported(new HttpRequestMethodNotSupportedException("POST"));
+
+        assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+        assertNotNull(response.getBody());
     }
 }

@@ -72,4 +72,16 @@ public class TrainerDao {
                 .setParameter("username", traineeUsername)
                 .getResultList();
     }
+
+    public long countAll() {
+        return entityManager
+                .createQuery("select count(t) from Trainer t", Long.class)
+                .getSingleResult();
+    }
+
+    public long countActive() {
+        return entityManager
+                .createQuery("select count(t) from Trainer t where t.user.active = true", Long.class)
+                .getSingleResult();
+    }
 }

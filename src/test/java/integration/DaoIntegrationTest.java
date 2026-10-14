@@ -1,6 +1,6 @@
 package integration;
 
-import com.epam.training.gym.config.AppConfig;
+import com.epam.training.gym.GymCrmApplication;
 import com.epam.training.gym.dao.TraineeDao;
 import com.epam.training.gym.dao.TrainerDao;
 import com.epam.training.gym.dao.TrainingDao;
@@ -14,6 +14,8 @@ import com.epam.training.gym.model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = AppConfig.class)
+@SpringBootTest(classes = GymCrmApplication.class)
+@ActiveProfiles("local")
 class DaoIntegrationTest {
 
     @Autowired
@@ -337,5 +339,23 @@ class DaoIntegrationTest {
 
         assertEquals(1, found.size());
         assertTrue(notFound.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void trainerDao_counts_includeActiveAndInactiveTrainers() {
+        TrainingType yoga = trainingTypeDao.findByName("Yoga").orElseThrow();
+        User activeUser = newUser(unique("Active.Trainer"));
+        User inactiveUser = newUser(unique("Inactive.Trainer"));
+        inactiveUser.setActive(false);
+
+        long totalBefore = trainerDao.countAll();
+        long activeBefore = trainerDao.countActive();
+
+        trainerDao.save(Trainer.builder().user(activeUser).specialization(yoga).build());
+        trainerDao.save(Trainer.builder().user(inactiveUser).specialization(yoga).build());
+
+        assertEquals(totalBefore + 2, trainerDao.countAll());
+        assertEquals(activeBefore + 1, trainerDao.countActive());
     }
 }
