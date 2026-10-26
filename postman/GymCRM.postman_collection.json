@@ -24,7 +24,7 @@
       }],
       "request": {
         "method": "POST",
-        "url": "{{baseUrl}}/api/trainers",
+        "url": "{{baseUrl}}/api/v1/trainers",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Lee\",\n  \"specialization\": \"Yoga\"\n}" }
       }
@@ -41,7 +41,7 @@
       }],
       "request": {
         "method": "POST",
-        "url": "{{baseUrl}}/api/trainees",
+        "url": "{{baseUrl}}/api/v1/trainees",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"address\": \"Tashkent, Chilonzor\"\n}" }
       }
@@ -50,14 +50,14 @@
       "name": "3. Login (Trainee)",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/login?username={{traineeUsername}}&password={{traineePassword}}"
+        "url": "{{baseUrl}}/api/v1/login?username={{traineeUsername}}&password={{traineePassword}}"
       }
     },
     {
       "name": "4. Change Login (Trainee)",
       "request": {
         "method": "PUT",
-        "url": "{{baseUrl}}/api/login",
+        "url": "{{baseUrl}}/api/v1/login",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\",\n  \"newPassword\": \"NewPass123\"\n}" }
       }
@@ -70,13 +70,13 @@
           "pm.collectionVariables.set('traineePassword', 'NewPass123');"
         ]}
       }],
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/training-types" }
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/training-types" }
     },
     {
       "name": "5. Get Trainee Profile",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
           { "key": "password", "value": "{{traineePassword}}" }
@@ -87,7 +87,7 @@
       "name": "6. Update Trainee Profile",
       "request": {
         "method": "PUT",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
@@ -100,7 +100,7 @@
       "name": "8. Get Trainer Profile",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+        "url": "{{baseUrl}}/api/v1/trainers/{{trainerUsername}}",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{trainerUsername}}" },
           { "key": "password", "value": "{{trainerPassword}}" }
@@ -111,7 +111,7 @@
       "name": "9. Update Trainer Profile",
       "request": {
         "method": "PUT",
-        "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+        "url": "{{baseUrl}}/api/v1/trainers/{{trainerUsername}}",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{trainerUsername}}" },
@@ -124,7 +124,7 @@
       "name": "10. Get Unassigned Active Trainers",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/unassigned-trainers",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}/unassigned-trainers",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
           { "key": "password", "value": "{{traineePassword}}" }
@@ -135,7 +135,7 @@
       "name": "11. Update Trainee's Trainer List",
       "request": {
         "method": "PUT",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}/trainers",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
@@ -148,7 +148,7 @@
       "name": "14. Add Training",
       "request": {
         "method": "POST",
-        "url": "{{baseUrl}}/api/trainings",
+        "url": "{{baseUrl}}/api/v1/trainings",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
@@ -161,7 +161,7 @@
       "name": "12. Get Trainee Trainings List",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainings",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}/trainings",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
           { "key": "password", "value": "{{traineePassword}}" }
@@ -172,7 +172,7 @@
       "name": "13. Get Trainer Trainings List",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}/trainings",
+        "url": "{{baseUrl}}/api/v1/trainers/{{trainerUsername}}/trainings",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{trainerUsername}}" },
           { "key": "password", "value": "{{trainerPassword}}" }
@@ -183,7 +183,7 @@
       "name": "15. Activate/Deactivate Trainee",
       "request": {
         "method": "PATCH",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/status",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}/status",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
@@ -196,7 +196,7 @@
       "name": "16. Activate/Deactivate Trainer",
       "request": {
         "method": "PATCH",
-        "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}/status",
+        "url": "{{baseUrl}}/api/v1/trainers/{{trainerUsername}}/status",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{trainerUsername}}" },
@@ -209,14 +209,14 @@
       "name": "17. Get Training Types",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/training-types"
+        "url": "{{baseUrl}}/api/v1/training-types"
       }
     },
     {
       "name": "7. Delete Trainee Profile (run last)",
       "request": {
         "method": "DELETE",
-        "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+        "url": "{{baseUrl}}/api/v1/trainees/{{traineeUsername}}",
         "auth": { "type": "basic", "basic": [
           { "key": "username", "value": "{{traineeUsername}}" },
           { "key": "password", "value": "{{traineePassword}}" }

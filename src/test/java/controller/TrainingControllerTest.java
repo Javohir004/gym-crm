@@ -3,7 +3,7 @@ package controller;
 import com.epam.training.gym.controller.TrainingController;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
 import com.epam.training.gym.exception.NotFoundException;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.model.Training;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -32,7 +32,7 @@ class TrainingControllerTest {
     private static final String AUTH_HEADER = BasicAuthHeader.value(USERNAME, PASSWORD);
 
     @Mock
-    private GymFacade facade;
+    private TrainingService trainingService;
 
     private MockMvc mockMvc;
 
@@ -41,15 +41,15 @@ class TrainingControllerTest {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
 
-        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingController(facade))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingController(trainingService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
                 .build();
     }
 
     @Test
-    void addTraining_returns200_andDelegatesToFacade_withNoTrainingTypeField() throws Exception {
-        when(facade.addTraining(USERNAME, PASSWORD, "John.Doe", "Anna.Lee", "Morning Yoga",
+    void addTraining_returns200_andDelegatesToService_withNoTrainingTypeField() throws Exception {
+        when(trainingService.addTraining(USERNAME, PASSWORD, "John.Doe", "Anna.Lee", "Morning Yoga",
                 LocalDate.of(2026, 9, 1), 60)).thenReturn(Training.builder().build());
 
         String body = """
@@ -57,17 +57,17 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(post("/api/v1/trainings").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk());
 
-        verify(facade).addTraining(USERNAME, PASSWORD, "John.Doe", "Anna.Lee", "Morning Yoga",
+        verify(trainingService).addTraining(USERNAME, PASSWORD, "John.Doe", "Anna.Lee", "Morning Yoga",
                 LocalDate.of(2026, 9, 1), 60);
     }
 
     @Test
     void addTraining_returns404_whenTrainerDoesNotExist() throws Exception {
-        when(facade.addTraining(USERNAME, PASSWORD, "John.Doe", "No.Such", "Morning Yoga",
+        when(trainingService.addTraining(USERNAME, PASSWORD, "John.Doe", "No.Such", "Morning Yoga",
                 LocalDate.of(2026, 9, 1), 60)).thenThrow(new NotFoundException("Trainer not found: No.Such"));
 
         String body = """
@@ -75,7 +75,7 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(post("/api/v1/trainings").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isNotFound());
     }
@@ -87,7 +87,7 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").contentType("application/json").content(body))
+        mockMvc.perform(post("/api/v1/trainings").contentType("application/json").content(body))
                 .andExpect(status().isUnauthorized());
     }
 }

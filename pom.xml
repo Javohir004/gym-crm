@@ -80,7 +80,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Embedded Tomcat: we start/stop it ourselves from Main, no Spring Boot involved -->
+        <!-- Embedded Tomcat: we start/stop it ourselves from RestApplication, no Spring Boot involved -->
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
@@ -208,11 +208,10 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
                 <configuration>
-                    <!-- Entry points that start a real embedded Tomcat / run the
-                         demo - not realistic to unit test, excluded from coverage
-                         the same way a main() class usually is. -->
+                    <!-- Entry point that starts a real embedded Tomcat - not realistic
+                         to unit test, excluded from coverage the same way a main()
+                         class usually is. -->
                     <excludes>
-                        <exclude>com/epam/training/gym/Main.class</exclude>
                         <exclude>com/epam/training/gym/RestApplication.class</exclude>
                     </excludes>
                 </configuration>

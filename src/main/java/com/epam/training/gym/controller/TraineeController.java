@@ -13,8 +13,9 @@ import com.epam.training.gym.dto.responses.TraineeProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTraineeProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTraineeTrainersResponse;
 import com.epam.training.gym.exception.AuthenticationException;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainee;
+import com.epam.training.gym.service.TraineeService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.util.BasicAuthUtil;
 import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,14 +41,16 @@ import java.time.LocalDate;
 
 
 @RestController
-@RequestMapping("/api/trainees")
+@RequestMapping("/api/v1/trainees")
 @Tag(name = "Trainee", description = "Trainee registration, profile, trainers list and trainings")
 public class TraineeController {
 
-    private final GymFacade facade;
+    private final TraineeService traineeService;
+    private final TrainingService trainingService;
 
-    public TraineeController(GymFacade facade) {
-        this.facade = facade;
+    public TraineeController(TraineeService traineeService, TrainingService trainingService) {
+        this.traineeService = traineeService;
+        this.trainingService = trainingService;
     }
 
 
@@ -56,7 +59,7 @@ public class TraineeController {
     @ApiResponse(responseCode = "201", description = "Trainee created")
     @ApiResponse(responseCode = "400", description = "Validation error")
     public ResponseEntity<RegistrationResponse> register(@RequestBody TraineeRegistrationRequest request) {
-        Trainee trainee = facade.createTrainee(request.firstName(), request.lastName(),
+        Trainee trainee = traineeService.createTrainee(request.firstName(), request.lastName(),
                 request.dateOfBirth(), request.address());
         RegistrationResponse response = new RegistrationResponse(
                 trainee.getUser().getUsername(), trainee.getUser().getPassword());
@@ -70,7 +73,7 @@ public class TraineeController {
     public ResponseEntity<TraineeProfileResponse> getProfile(
             @PathVariable String username, HttpServletRequest request) {
         String password = authenticate(username, request);
-        Trainee trainee = facade.getTrainee(username, password);
+        Trainee trainee = traineeService.getByUsername(username, password);
         return ResponseEntity.ok(DtoMapper.toTraineeProfileResponse(trainee));
     }
 
@@ -83,7 +86,7 @@ public class TraineeController {
             @PathVariable String username, @RequestBody UpdateTraineeProfileRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
         Validation.requireNotNull(body.isActive(), "Is Active");
-        Trainee trainee = facade.updateTraineeProfile(username, password, body.firstName(), body.lastName(),
+        Trainee trainee = traineeService.updateFullProfile(username, password, body.firstName(), body.lastName(),
                 body.dateOfBirth(), body.address(), body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTraineeProfileResponse(trainee));
     }
@@ -94,7 +97,7 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<Void> delete(@PathVariable String username, HttpServletRequest request) {
         String password = authenticate(username, request);
-        facade.deleteTrainee(username, password);
+        traineeService.delete(username, password);
         return ResponseEntity.ok().build();
     }
 
@@ -104,7 +107,7 @@ public class TraineeController {
     public ResponseEntity<java.util.List<TrainerShortDto>> getUnassignedActiveTrainers(
             @PathVariable String username, HttpServletRequest request) {
         String password = authenticate(username, request);
-        var trainers = facade.getUnassignedActiveTrainers(username, password);
+        var trainers = traineeService.getUnassignedActiveTrainers(username, password);
         return ResponseEntity.ok(DtoMapper.toTrainerShortDtoList(trainers));
     }
 
@@ -115,7 +118,7 @@ public class TraineeController {
     public ResponseEntity<UpdateTraineeTrainersResponse> updateTrainers(
             @PathVariable String username, @RequestBody UpdateTraineeTrainersRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.traineeUsername());
-        Trainee trainee = facade.updateTraineeTrainers(username, password, body.trainers());
+        Trainee trainee = traineeService.updateTrainers(username, password, body.trainers());
         return ResponseEntity.ok(new UpdateTraineeTrainersResponse(DtoMapper.toTrainerShortDtoList(trainee.getTrainers())));
     }
 
@@ -130,7 +133,7 @@ public class TraineeController {
             @Parameter(description = "Training type name") @RequestParam(required = false) String trainingType,
             HttpServletRequest request) {
         String password = authenticate(username, request);
-        var trainings = facade.getTraineeTrainings(username, password, periodFrom, periodTo, trainerName, trainingType);
+        var trainings = trainingService.getTraineeTrainings(username, password, periodFrom, periodTo, trainerName, trainingType);
         return ResponseEntity.ok(DtoMapper.toTraineeTrainingDtoList(trainings));
     }
 
@@ -141,7 +144,7 @@ public class TraineeController {
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
         Validation.requireNotNull(body.isActive(), "Is Active");
-        facade.setTraineeActive(username, password, body.isActive());
+        traineeService.setActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
     }
 

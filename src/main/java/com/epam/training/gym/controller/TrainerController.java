@@ -9,8 +9,9 @@ import com.epam.training.gym.dto.responses.RegistrationResponse;
 import com.epam.training.gym.dto.responses.TrainerProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTrainerProfileResponse;
 import com.epam.training.gym.exception.AuthenticationException;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainer;
+import com.epam.training.gym.service.TrainerService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.util.BasicAuthUtil;
 import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,14 +39,16 @@ import java.util.List;
  * Endpoints 1, 8, 9, 13, 16 - everything about Trainer profiles.
  */
 @RestController
-@RequestMapping("/api/trainers")
+@RequestMapping("/api/v1/trainers")
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
 public class TrainerController {
 
-    private final GymFacade facade;
+    private final TrainerService trainerService;
+    private final TrainingService trainingService;
 
-    public TrainerController(GymFacade facade) {
-        this.facade = facade;
+    public TrainerController(TrainerService trainerService, TrainingService trainingService) {
+        this.trainerService = trainerService;
+        this.trainingService = trainingService;
     }
 
     @PostMapping
@@ -53,7 +56,7 @@ public class TrainerController {
     @ApiResponse(responseCode = "201", description = "Trainer created")
     @ApiResponse(responseCode = "400", description = "Validation error, or unknown specialization")
     public ResponseEntity<RegistrationResponse> register(@RequestBody TrainerRegistrationRequest request) {
-        Trainer trainer = facade.createTrainer(request.firstName(), request.lastName(), request.specialization());
+        Trainer trainer = trainerService.createTrainer(request.firstName(), request.lastName(), request.specialization());
         RegistrationResponse response = new RegistrationResponse(
                 trainer.getUser().getUsername(), trainer.getUser().getPassword());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -66,7 +69,7 @@ public class TrainerController {
     public ResponseEntity<TrainerProfileResponse> getProfile(
             @PathVariable String username, HttpServletRequest request) {
         String password = authenticate(username, request);
-        Trainer trainer = facade.getTrainer(username, password);
+        Trainer trainer = trainerService.getByUsername(username, password);
         return ResponseEntity.ok(DtoMapper.toTrainerProfileResponse(trainer));
     }
 
@@ -78,7 +81,7 @@ public class TrainerController {
             @PathVariable String username, @RequestBody UpdateTrainerProfileRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
         Validation.requireNotNull(body.isActive(), "Is Active");
-        Trainer trainer = facade.updateTrainerProfile(username, password, body.firstName(), body.lastName(),
+        Trainer trainer = trainerService.updateFullProfile(username, password, body.firstName(), body.lastName(),
                 body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTrainerProfileResponse(trainer));
     }
@@ -93,7 +96,7 @@ public class TrainerController {
             @Parameter(description = "Part of the trainee's name") @RequestParam(required = false) String traineeName,
             HttpServletRequest request) {
         String password = authenticate(username, request);
-        var trainings = facade.getTrainerTrainings(username, password, periodFrom, periodTo, traineeName);
+        var trainings = trainingService.getTrainerTrainings(username, password, periodFrom, periodTo, traineeName);
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
@@ -105,7 +108,7 @@ public class TrainerController {
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
         String password = authenticate(username, request, body.username());
         Validation.requireNotNull(body.isActive(), "Is Active");
-        facade.setTrainerActive(username, password, body.isActive());
+        trainerService.setActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
     }
 

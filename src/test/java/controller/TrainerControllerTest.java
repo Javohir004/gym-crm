@@ -2,7 +2,8 @@ package controller;
 
 import com.epam.training.gym.controller.TrainerController;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.TrainerService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
@@ -37,13 +38,16 @@ class TrainerControllerTest {
     private static final String AUTH_HEADER = BasicAuthHeader.value(USERNAME, PASSWORD);
 
     @Mock
-    private GymFacade facade;
+    private TrainerService trainerService;
+
+    @Mock
+    private TrainingService trainingService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new TrainerController(facade))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TrainerController(trainerService, trainingService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -56,14 +60,14 @@ class TrainerControllerTest {
 
     @Test
     void register_returns201WithGeneratedCredentials() throws Exception {
-        when(facade.createTrainer("Anna", "Lee", "Yoga"))
+        when(trainerService.createTrainer("Anna", "Lee", "Yoga"))
                 .thenReturn(trainer(true, TrainingType.builder().trainingTypeName("Yoga").build()));
 
         String body = """
                 {"firstName":"Anna","lastName":"Lee","specialization":"Yoga"}
                 """;
 
-        mockMvc.perform(post("/api/trainers").contentType("application/json").content(body))
+        mockMvc.perform(post("/api/v1/trainers").contentType("application/json").content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value(USERNAME))
                 .andExpect(jsonPath("$.password").value(PASSWORD));
@@ -75,9 +79,9 @@ class TrainerControllerTest {
         Trainer trainer = trainer(true, yoga);
         User traineeUser = User.builder().firstName("John").lastName("Doe").username("John.Doe").build();
         trainer.setTrainees(Set.of(Trainee.builder().user(traineeUser).build()));
-        when(facade.getTrainer(USERNAME, PASSWORD)).thenReturn(trainer);
+        when(trainerService.getByUsername(USERNAME, PASSWORD)).thenReturn(trainer);
 
-        mockMvc.perform(get("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.specialization").value("Yoga"))
                 .andExpect(jsonPath("$.trainees[0].username").value("John.Doe"));
@@ -86,7 +90,7 @@ class TrainerControllerTest {
     @Test
     void updateProfile_returns200_andSpecializationStaysWhatServiceReturns() throws Exception {
         TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
-        when(facade.updateTrainerProfile(USERNAME, PASSWORD, "Anna", "Lee", true))
+        when(trainerService.updateFullProfile(USERNAME, PASSWORD, "Anna", "Lee", true))
                 .thenReturn(trainer(true, yoga));
 
         // Even though the request carries "Fitness", the controller must not pass it to the
@@ -95,7 +99,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","firstName":"Anna","lastName":"Lee","specialization":"Fitness","isActive":true}
                 """;
 
-        mockMvc.perform(put("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.specialization").value("Yoga"));
@@ -107,7 +111,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","firstName":"Anna","lastName":"Lee"}
                 """;
 
-        mockMvc.perform(put("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -119,9 +123,9 @@ class TrainerControllerTest {
                 .trainingType(TrainingType.builder().trainingTypeName("Yoga").build())
                 .trainee(Trainee.builder().user(User.builder().firstName("John").lastName("Doe").build()).build())
                 .build();
-        when(facade.getTrainerTrainings(USERNAME, PASSWORD, null, null, null)).thenReturn(List.of(training));
+        when(trainingService.getTrainerTrainings(USERNAME, PASSWORD, null, null, null)).thenReturn(List.of(training));
 
-        mockMvc.perform(get("/api/trainers/" + USERNAME + "/trainings").header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get("/api/v1/trainers/" + USERNAME + "/trainings").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].traineeName").value("John Doe"));
     }
@@ -132,7 +136,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","isActive":false}
                 """;
 
-        mockMvc.perform(patch("/api/trainers/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(patch("/api/v1/trainers/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk());
     }

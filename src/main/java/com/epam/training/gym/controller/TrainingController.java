@@ -1,7 +1,7 @@
 package com.epam.training.gym.controller;
 
 import com.epam.training.gym.dto.requests.AddTrainingRequest;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.util.BasicAuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,14 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/trainings")
+@RequestMapping("/api/v1/trainings")
 @Tag(name = "Training", description = "Adding a training session")
 public class TrainingController {
 
-    private final GymFacade facade;
+    private final TrainingService trainingService;
 
-    public TrainingController(GymFacade facade) {
-        this.facade = facade;
+    public TrainingController(TrainingService trainingService) {
+        this.trainingService = trainingService;
     }
 
     @PostMapping
@@ -33,7 +33,7 @@ public class TrainingController {
     @ApiResponse(responseCode = "404", description = "Trainee or trainer not found")
     public ResponseEntity<Void> addTraining(@RequestBody AddTrainingRequest body, HttpServletRequest request) {
         BasicAuthUtil.Credentials credentials = BasicAuthUtil.extract(request);
-        facade.addTraining(credentials.username(), credentials.password(),
+        trainingService.addTraining(credentials.username(), credentials.password(),
                 body.traineeUsername(), body.trainerUsername(), body.trainingName(),
                 body.trainingDate(), body.trainingDuration());
         return ResponseEntity.ok().build();

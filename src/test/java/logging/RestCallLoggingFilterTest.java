@@ -32,14 +32,14 @@ class RestCallLoggingFilterTest {
     @Test
     void doFilter_logsTheIncomingCall_andTheFinalStatus() throws IOException, ServletException {
         when(request.getMethod()).thenReturn("GET");
-        when(request.getRequestURI()).thenReturn("/api/training-types");
+        when(request.getRequestURI()).thenReturn("/api/v1/training-types");
         when(response.getStatus()).thenReturn(200);
 
         try (LogCapture logs = new LogCapture(RestCallLoggingFilter.class)) {
             filter.doFilter(request, response, chain);
 
             assertTrue(logs.messages(Level.INFO).stream()
-                    .anyMatch(m -> m.contains("GET") && m.contains("/api/training-types") && m.contains("received")));
+                    .anyMatch(m -> m.contains("GET") && m.contains("/api/v1/training-types") && m.contains("received")));
             assertTrue(logs.messages(Level.INFO).stream()
                     .anyMatch(m -> m.contains("status=200")));
         }
@@ -48,7 +48,7 @@ class RestCallLoggingFilterTest {
     @Test
     void doFilter_alwaysCallsTheRestOfTheChain() throws IOException, ServletException {
         when(request.getMethod()).thenReturn("POST");
-        when(request.getRequestURI()).thenReturn("/api/trainees");
+        when(request.getRequestURI()).thenReturn("/api/v1/trainees");
         when(response.getStatus()).thenReturn(201);
 
         filter.doFilter(request, response, chain);
@@ -59,7 +59,7 @@ class RestCallLoggingFilterTest {
     @Test
     void doFilter_logsTheErrorStatus_whenTheCallFails() throws IOException, ServletException {
         when(request.getMethod()).thenReturn("GET");
-        when(request.getRequestURI()).thenReturn("/api/trainees/John.Doe");
+        when(request.getRequestURI()).thenReturn("/api/v1/trainees/John.Doe");
         when(response.getStatus()).thenReturn(401);
 
         try (LogCapture logs = new LogCapture(RestCallLoggingFilter.class)) {
