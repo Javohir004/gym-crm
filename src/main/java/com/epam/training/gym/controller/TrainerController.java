@@ -35,9 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Endpoints 1, 8, 9, 13, 16 - everything about Trainer profiles.
- */
+
 @RestController
 @RequestMapping("/api/v1/trainers")
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
