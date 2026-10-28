@@ -21,14 +21,14 @@ Context/MVC and an embedded Tomcat are wired by hand.
 model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
 dao/         EntityManager-based DAOs
 service/     Business logic, authentication, validation, @Transactional
-facade/      GymFacade — one method per required function
 controller/  @RestController classes — the 17 REST endpoints
 dto/
   requests/  Request bodies
   responses/ Response bodies
 exception/   Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
 logging/     TransactionIdFilter, RestCallLoggingFilter
-util/        Validation, BasicAuthUtil
+util/        Validation
+security/    Spring Security config, JWT, login-attempt protection, logout
 config/      AppConfig (DB/Hibernate/transactions), WebConfig (MVC)
 Main.java            demo for the Hibernate-module functions (console)
 RestApplication.java starts the embedded Tomcat + REST API
@@ -83,11 +83,21 @@ auto-save the generated username/password for the rest of the collection).
 
 ### Authentication
 
-Every endpoint except registration (1, 2) and "Get Training types" (17) requires
-**HTTP Basic Auth** (`Authorization: Basic base64(username:password)`). The
-task's own per-endpoint "Request" fields rarely repeat the password, so it
-travels in this standard header instead, uniformly, for every authenticated
-call.
+Every endpoint except registration (1, 2) and login (3) requires a **JWT**:
+`Authorization: Bearer <token>`.
+
+* **Registration** returns `username`, the generated `password` (shown once, only its
+  BCrypt hash is stored) and a `token`.
+* **Login** `POST /api/login` with `{"username": "...", "password": "..."}` returns `{"token": "..."}`.
+* **Brute-force protection**: after 3 wrong passwords the username is blocked for
+  5 minutes (HTTP 429, even for the correct password).
+* **Logout** `POST /api/logout` with the Bearer token puts the token on a blacklist.
+* **Own profile only**: a user can only read or change his or her own data (HTTP 403 otherwise).
+* **CORS**: allowed origins are set in `gym.security.cors.allowed-origins`.
+* Settings (`application.properties`): `gym.security.jwt.secret` (override with the
+  `GYM_JWT_SECRET` environment variable, at least 32 characters),
+  `gym.security.jwt.expiration-minutes`, `gym.security.login.max-attempts`,
+  `gym.security.login.block-minutes`.
 
 ### Endpoints
 
@@ -95,8 +105,9 @@ call.
 |---|---|---|
 | 1 | Trainer Registration | `POST /trainers` |
 | 2 | Trainee Registration | `POST /trainees` |
-| 3 | Login | `GET /login?username=&password=` |
+| 3 | Login | `POST /login` (JSON body) |
 | 4 | Change Login | `PUT /login` |
+| 18 | Logout | `POST /logout` |
 | 5 | Get Trainee Profile | `GET /trainees/{username}` |
 | 6 | Update Trainee Profile | `PUT /trainees/{username}` |
 | 7 | Delete Trainee Profile | `DELETE /trainees/{username}` |
