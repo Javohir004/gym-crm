@@ -36,7 +36,7 @@ public class GymMetricsAspect {
     }
 
     @AfterThrowing(
-            pointcut = "execution(* com.epam.training.gym.service.AuthenticationService.authenticate*(..))",
+            pointcut = "execution(* com.epam.training.gym.service.AuthenticationService.login(..))",
             throwing = "ex")
     public void afterAuthenticationFailed(AuthenticationException ex) {
         metrics.authenticationFailed();

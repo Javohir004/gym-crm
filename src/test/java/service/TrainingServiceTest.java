@@ -4,23 +4,16 @@ import ch.qos.logback.classic.Level;
 import com.epam.training.gym.dao.TraineeDao;
 import com.epam.training.gym.dao.TrainerDao;
 import com.epam.training.gym.dao.TrainingDao;
-import com.epam.training.gym.dao.TrainingTypeDao;
-import com.epam.training.gym.dto.requests.TrainingRequest;
-import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.NotFoundException;
 import com.epam.training.gym.exception.ValidationException;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
 import com.epam.training.gym.model.TrainingType;
-import com.epam.training.gym.service.AuthenticationService;
 import com.epam.training.gym.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +22,6 @@ import support.LogCapture;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,12 +44,11 @@ class TrainingServiceTest {
     private TraineeDao traineeDao;
     @Mock
     private TrainerDao trainerDao;
-    @Mock
-    private TrainingTypeDao trainingTypeDao;
-    @Mock
-    private AuthenticationService authenticationService;
 
     private TrainingService service;
+    private TrainingType yoga;
+    private Trainee trainee;
+    private Trainer trainer;
 
     @BeforeEach
     void setUp() {
@@ -65,26 +56,25 @@ class TrainingServiceTest {
         service.setTrainingDao(trainingDao);
         service.setTraineeDao(traineeDao);
         service.setTrainerDao(trainerDao);
-        service.setTrainingTypeDao(trainingTypeDao);
-        service.setAuthenticationService(authenticationService);
+
+        yoga = TrainingType.builder().trainingTypeName("Yoga").build();
+        trainee = Trainee.builder().build();
+        trainer = Trainer.builder().specialization(yoga).build();
     }
 
-    private static TrainingRequest validRequest() {
-        return new TrainingRequest("John.Doe", "Anna.Lee", "Morning Yoga", "Yoga", DATE, 60);
-    }
-
-
-    @Test
-    void addTraining_savesTrainingBuiltFromRequest() {
-        Trainee trainee = Trainee.builder().build();
-        Trainer trainer = Trainer.builder().build();
-        TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
+    private void bothExist() {
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(trainer));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
+    }
+
+    // ---------- addTraining ----------
+
+    @Test
+    void addTraining_usesTrainersSpecializationAsType() {
+        bothExist();
         when(trainingDao.save(any(Training.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Training result = service.addTraining("Anna.Lee", "pass", validRequest());
+        Training result = service.addTraining("John.Doe", "Anna.Lee", "  Morning Yoga ", DATE, 60);
 
         ArgumentCaptor<Training> captor = ArgumentCaptor.forClass(Training.class);
         verify(trainingDao).save(captor.capture());
@@ -96,33 +86,15 @@ class TrainingServiceTest {
         assertEquals(DATE, saved.getTrainingDate());
         assertEquals(60, saved.getTrainingDuration());
         assertSame(saved, result);
-        verify(authenticationService).authenticate("Anna.Lee", "pass");
-    }
-
-    @Test
-    void addTraining_trimsTrainingNameAndTypeName() {
-        TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(Trainee.builder().build()));
-        when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(Trainer.builder().build()));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
-        when(trainingDao.save(any(Training.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Training result = service.addTraining("Anna.Lee", "pass",
-                new TrainingRequest("John.Doe", "Anna.Lee", "  Morning Yoga  ", " Yoga ", DATE, 60));
-
-        assertEquals("Morning Yoga", result.getTrainingName());
     }
 
     @Test
     void addTraining_logsCreatedTraining() {
-        TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(Trainee.builder().build()));
-        when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(Trainer.builder().build()));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
+        bothExist();
         when(trainingDao.save(any(Training.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         try (LogCapture logs = new LogCapture(TrainingService.class)) {
-            service.addTraining("Anna.Lee", "pass", validRequest());
+            service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 60);
 
             assertTrue(logs.messages(Level.INFO).stream()
                     .anyMatch(m -> m.contains("Morning Yoga") && m.contains("John.Doe") && m.contains("Anna.Lee")));
@@ -130,43 +102,29 @@ class TrainingServiceTest {
     }
 
     @Test
-    void addTraining_throwsAndSavesNothing_whenAuthenticationFails() {
-        when(authenticationService.authenticate("Anna.Lee", "wrong"))
-                .thenThrow(new AuthenticationException("Invalid username or password"));
-
-        assertThrows(AuthenticationException.class, () -> service.addTraining("Anna.Lee", "wrong", validRequest()));
-
-        verifyNoInteractions(trainingDao, traineeDao, trainerDao, trainingTypeDao);
-    }
-
-    @Test
-    void addTraining_throwsValidation_whenRequestIsNull() {
-        assertThrows(ValidationException.class, () -> service.addTraining("Anna.Lee", "pass", null));
+    void addTraining_throwsValidation_whenDurationIsNotPositive() {
+        assertThrows(ValidationException.class,
+                () -> service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 0));
 
         verifyNoInteractions(trainingDao);
     }
 
-    static Stream<Arguments> invalidRequests() {
-        return Stream.of(
-                Arguments.of(new TrainingRequest(" ", "Anna.Lee", "Yoga", "Yoga", DATE, 60), "Trainee username"),
-                Arguments.of(new TrainingRequest("John.Doe", null, "Yoga", "Yoga", DATE, 60), "Trainer username"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "", "Yoga", DATE, 60), "Training name"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "Yoga", null, DATE, 60), "Training type"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "Yoga", "Yoga", null, 60), "Training date"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "Yoga", "Yoga", DATE, null), "Training duration"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "Yoga", "Yoga", DATE, 0), "Training duration"),
-                Arguments.of(new TrainingRequest("John.Doe", "Anna.Lee", "Yoga", "Yoga", DATE, -5), "Training duration")
-        );
+    @Test
+    void addTraining_throwsValidation_whenDateIsMissing() {
+        assertThrows(ValidationException.class,
+                () -> service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", null, 60));
     }
 
-    @ParameterizedTest
-    @MethodSource("invalidRequests")
-    void addTraining_throwsValidation_forInvalidField(TrainingRequest request, String fieldInMessage) {
-        ValidationException ex = assertThrows(ValidationException.class,
-                () -> service.addTraining("Anna.Lee", "pass", request));
+    @Test
+    void addTraining_throwsValidation_whenNameIsBlank() {
+        assertThrows(ValidationException.class,
+                () -> service.addTraining("John.Doe", "Anna.Lee", " ", DATE, 60));
+    }
 
-        assertTrue(ex.getMessage().contains(fieldInMessage));
-        verify(trainingDao, never()).save(any());
+    @Test
+    void addTraining_throwsValidation_whenUsernamesAreBlank() {
+        assertThrows(ValidationException.class, () -> service.addTraining(" ", "Anna.Lee", "Yoga", DATE, 60));
+        assertThrows(ValidationException.class, () -> service.addTraining("John.Doe", "", "Yoga", DATE, 60));
     }
 
     @Test
@@ -174,7 +132,7 @@ class TrainingServiceTest {
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class,
-                () -> service.addTraining("Anna.Lee", "pass", validRequest()));
+                () -> service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 60));
 
         assertTrue(ex.getMessage().contains("John.Doe"));
         verify(trainingDao, never()).save(any());
@@ -182,136 +140,53 @@ class TrainingServiceTest {
 
     @Test
     void addTraining_throwsNotFound_whenTrainerDoesNotExist() {
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(Trainee.builder().build()));
+        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class,
-                () -> service.addTraining("Anna.Lee", "pass", validRequest()));
+                () -> service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 60));
 
         assertTrue(ex.getMessage().contains("Anna.Lee"));
         verify(trainingDao, never()).save(any());
     }
 
-    @Test
-    void addTraining_throwsNotFound_whenTrainingTypeDoesNotExist() {
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(Trainee.builder().build()));
-        when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(Trainer.builder().build()));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.empty());
-
-        NotFoundException ex = assertThrows(NotFoundException.class,
-                () -> service.addTraining("Anna.Lee", "pass", validRequest()));
-
-        assertTrue(ex.getMessage().contains("Yoga"));
-        verify(trainingDao, never()).save(any());
-    }
-
+    // ---------- searching ----------
 
     @Test
-    void getTraineeTrainings_authenticatesAsTrainee_andPassesAllFiltersToDao() {
+    void getTraineeTrainings_passesAllFiltersToDao() {
         List<Training> expected = List.of(Training.builder().trainingName("Morning Yoga").build());
         LocalDate to = DATE.plusDays(30);
+        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(trainingDao.findByTraineeUsername("John.Doe", DATE, to, "anna", "Yoga")).thenReturn(expected);
 
-        List<Training> result = service.getTraineeTrainings("John.Doe", "pass", DATE, to, "anna", "Yoga");
-
-        assertSame(expected, result);
-        verify(authenticationService).authenticateTrainee("John.Doe", "pass");
+        assertSame(expected, service.getTraineeTrainings("John.Doe", DATE, to, "anna", "Yoga"));
     }
 
     @Test
-    void getTraineeTrainings_doesNotQuery_whenAuthenticationFails() {
-        when(authenticationService.authenticateTrainee("John.Doe", "wrong"))
-                .thenThrow(new AuthenticationException("Invalid username or password"));
-
-        assertThrows(AuthenticationException.class,
-                () -> service.getTraineeTrainings("John.Doe", "wrong", null, null, null, null));
-
-        verifyNoInteractions(trainingDao);
-    }
-
-    @Test
-    void getTrainerTrainings_authenticatesAsTrainer_andPassesAllFiltersToDao() {
-        List<Training> expected = List.of(Training.builder().trainingName("Morning Yoga").build());
-        when(trainingDao.findByTrainerUsername("Anna.Lee", DATE, null, "john")).thenReturn(expected);
-
-        List<Training> result = service.getTrainerTrainings("Anna.Lee", "pass", DATE, null, "john");
-
-        assertSame(expected, result);
-        verify(authenticationService).authenticateTrainer("Anna.Lee", "pass");
-    }
-
-    @Test
-    void getTrainerTrainings_doesNotQuery_whenAuthenticationFails() {
-        when(authenticationService.authenticateTrainer("Anna.Lee", "wrong"))
-                .thenThrow(new AuthenticationException("Invalid username or password"));
-
-        assertThrows(AuthenticationException.class,
-                () -> service.getTrainerTrainings("Anna.Lee", "wrong", null, null, null));
-
-        verifyNoInteractions(trainingDao);
-    }
-
-
-    // ---------- REST-only addTraining overload: type comes from the trainer's specialization ----------
-
-    @Test
-    void addTrainingRest_usesTrainersSpecializationAsType() {
-        TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
-        Trainee trainee = Trainee.builder().build();
-        Trainer trainer = Trainer.builder().specialization(yoga).build();
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
-        when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(trainer));
-        when(trainingDao.save(any(Training.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Training result = service.addTraining("John.Doe", "pass", "John.Doe", "Anna.Lee",
-                "Morning Yoga", DATE, 60);
-
-        assertSame(trainee, result.getTrainee());
-        assertSame(trainer, result.getTrainer());
-        assertSame(yoga, result.getTrainingType());
-        assertEquals("Morning Yoga", result.getTrainingName());
-        assertEquals(DATE, result.getTrainingDate());
-        assertEquals(60, result.getTrainingDuration());
-        verifyNoInteractions(trainingTypeDao);
-    }
-
-    @Test
-    void addTrainingRest_throwsValidation_whenDurationIsNotPositive() {
-        assertThrows(ValidationException.class,
-                () -> service.addTraining("John.Doe", "pass", "John.Doe", "Anna.Lee", "Yoga", DATE, 0));
-
-        verifyNoInteractions(trainingDao);
-    }
-
-    @Test
-    void addTrainingRest_throwsNotFound_whenTraineeDoesNotExist() {
+    void getTraineeTrainings_throwsNotFound_andDoesNotQuery_whenTraineeDoesNotExist() {
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> service.addTraining("John.Doe", "pass", "John.Doe", "Anna.Lee", "Yoga", DATE, 60));
+                () -> service.getTraineeTrainings("John.Doe", null, null, null, null));
 
-        verify(trainingDao, never()).save(any());
+        verifyNoInteractions(trainingDao);
     }
 
     @Test
-    void addTrainingRest_throwsNotFound_whenTrainerDoesNotExist() {
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(Trainee.builder().build()));
+    void getTrainerTrainings_passesAllFiltersToDao() {
+        List<Training> expected = List.of(Training.builder().trainingName("Morning Yoga").build());
+        when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(trainer));
+        when(trainingDao.findByTrainerUsername("Anna.Lee", DATE, null, "john")).thenReturn(expected);
+
+        assertSame(expected, service.getTrainerTrainings("Anna.Lee", DATE, null, "john"));
+    }
+
+    @Test
+    void getTrainerTrainings_throwsNotFound_andDoesNotQuery_whenTrainerDoesNotExist() {
         when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class,
-                () -> service.addTraining("John.Doe", "pass", "John.Doe", "Anna.Lee", "Yoga", DATE, 60));
+        assertThrows(NotFoundException.class, () -> service.getTrainerTrainings("Anna.Lee", null, null, null));
 
-        verify(trainingDao, never()).save(any());
-    }
-
-    @Test
-    void addTrainingRest_throws_whenAuthenticationFails() {
-        when(authenticationService.authenticate("John.Doe", "wrong"))
-                .thenThrow(new AuthenticationException("Invalid username or password"));
-
-        assertThrows(AuthenticationException.class,
-                () -> service.addTraining("John.Doe", "wrong", "John.Doe", "Anna.Lee", "Yoga", DATE, 60));
-
-        verifyNoInteractions(traineeDao, trainerDao, trainingDao);
+        verifyNoInteractions(trainingDao);
     }
 }

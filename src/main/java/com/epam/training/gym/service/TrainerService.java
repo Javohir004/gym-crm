@@ -22,7 +22,6 @@ public class TrainerService {
 
     private TrainerDao trainerDao;
     private TrainingTypeDao trainingTypeDao;
-    private AuthenticationService authenticationService;
     private UserAccountService userAccountService;
 
     @Autowired
@@ -36,71 +35,38 @@ public class TrainerService {
     }
 
     @Autowired
-    public void setAuthenticationService(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
-    }
-
-    @Autowired
     public void setUserAccountService(UserAccountService userAccountService) {
         this.userAccountService = userAccountService;
     }
 
-    public Trainer createTrainer(String firstName, String lastName, String specializationName) {
+    public Registration<Trainer> createTrainer(String firstName, String lastName, String specializationName) {
         Validation.requireText(specializationName, "Specialization");
         TrainingType specialization = findTrainingType(specializationName);
 
-        User user = userAccountService.newUser(firstName, lastName);
+        Registration<User> account = userAccountService.newUser(firstName, lastName);
+        User user = account.profile();
         Trainer trainer = Trainer.builder()
                 .user(user)
                 .specialization(specialization)
                 .build();
         trainerDao.save(trainer);
         log.info("Trainer profile created: username={}", user.getUsername());
-        return trainer;
+        return new Registration<>(trainer, account.rawPassword());
     }
 
     @Transactional(readOnly = true)
-    public boolean credentialsMatch(String username, String password) {
-        return authenticationService.trainerCredentialsMatch(username, password);
+    public Trainer getByUsername(String username) {
+        return findTrainer(username);
     }
 
-    @Transactional(readOnly = true)
-    public Trainer getByUsername(String username, String password) {
-        return authenticationService.authenticateTrainer(username, password);
-    }
-
-    public void changePassword(String username, String password, String newPassword) {
-        Trainer trainer = authenticationService.authenticateTrainer(username, password);
-        userAccountService.changePassword(trainer.getUser(), newPassword);
-    }
-    public Trainer update(String username, String password,
-                          String firstName, String lastName, String specializationName) {
-        Trainer trainer = authenticationService.authenticateTrainer(username, password);
-        Validation.requireText(firstName, "First name");
-        Validation.requireText(lastName, "Last name");
-        Validation.requireText(specializationName, "Specialization");
-
-        trainer.getUser().setFirstName(firstName.trim());
-        trainer.getUser().setLastName(lastName.trim());
-        trainer.setSpecialization(findTrainingType(specializationName));
-        log.info("Updating trainer profile: username={}", username);
-        return trainerDao.update(trainer);
-    }
-
-    public boolean toggleActive(String username, String password) {
-        Trainer trainer = authenticationService.authenticateTrainer(username, password);
-        return userAccountService.toggleActive(trainer.getUser());
-    }
-
-    public void setActive(String username, String password, boolean active) {
-        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+    public void setActive(String username, boolean active) {
+        Trainer trainer = findTrainer(username);
         userAccountService.setActive(trainer.getUser(), active);
     }
 
 
-    public Trainer updateFullProfile(String username, String password,
-                                     String firstName, String lastName, boolean isActive) {
-        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+    public Trainer updateFullProfile(String username, String firstName, String lastName, boolean isActive) {
+        Trainer trainer = findTrainer(username);
         Validation.requireText(firstName, "First name");
         Validation.requireText(lastName, "Last name");
 
@@ -109,6 +75,11 @@ public class TrainerService {
         trainer.getUser().setActive(isActive);
         log.info("Updating trainer full profile: username={}", username);
         return trainerDao.update(trainer);
+    }
+
+    private Trainer findTrainer(String username) {
+        return trainerDao.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainer not found: " + username));
     }
 
     private TrainingType findTrainingType(String name) {

@@ -1,107 +1,69 @@
 package com.epam.training.gym.service;
 
-import com.epam.training.gym.dao.TraineeDao;
-import com.epam.training.gym.dao.TrainerDao;
-import com.epam.training.gym.dao.UserDao;
 import com.epam.training.gym.exception.AuthenticationException;
-import com.epam.training.gym.model.Trainee;
-import com.epam.training.gym.model.Trainer;
-import com.epam.training.gym.model.User;
+import com.epam.training.gym.exception.TooManyAttemptsException;
+import com.epam.training.gym.security.JwtService;
+import com.epam.training.gym.security.LoginAttemptService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Optional;
+import java.time.Duration;
 
-
+/** Login (username + password -> JWT) with brute-force protection. */
 @Service
-@Transactional(readOnly = true)
 public class AuthenticationService {
+
+    static final String INVALID_CREDENTIALS = "Invalid username or password";
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
 
-    private UserDao userDao;
-    private TraineeDao traineeDao;
-    private TrainerDao trainerDao;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final LoginAttemptService loginAttemptService;
 
-    @Autowired
-    public void setUserDao(UserDao userDao) {
-        this.userDao = userDao;
+    public AuthenticationService(AuthenticationManager authenticationManager,
+                                 JwtService jwtService,
+                                 LoginAttemptService loginAttemptService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.loginAttemptService = loginAttemptService;
     }
 
-    @Autowired
-    public void setTraineeDao(TraineeDao traineeDao) {
-        this.traineeDao = traineeDao;
-    }
-
-    @Autowired
-    public void setTrainerDao(TrainerDao trainerDao) {
-        this.trainerDao = trainerDao;
-    }
-
-    public User authenticate(String username, String password) {
-        if (isBlank(username) || isBlank(password)) {
-            throw failed(username);
+    public String login(String username, String password) {
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            log.warn("Login rejected: username or password is missing");
+            throw new AuthenticationException(INVALID_CREDENTIALS);
         }
-        User user = userDao.findByUsername(username)
-                .filter(candidate -> passwordMatches(candidate, password))
-                .orElseThrow(() -> failed(username));
-        log.debug("Authenticated user username={}", username);
-        return user;
-    }
+        rejectIfBlocked(username);
 
-    public Trainee authenticateTrainee(String username, String password) {
-        Trainee trainee = findTrainee(username, password).orElseThrow(() -> failed(username));
-        log.debug("Authenticated trainee username={}", username);
-        return trainee;
-    }
-
-    public Trainer authenticateTrainer(String username, String password) {
-        Trainer trainer = findTrainer(username, password).orElseThrow(() -> failed(username));
-        log.debug("Authenticated trainer username={}", username);
-        return trainer;
-    }
-
-    public boolean traineeCredentialsMatch(String username, String password) {
-        return findTrainee(username, password).isPresent();
-    }
-
-    public boolean trainerCredentialsMatch(String username, String password) {
-        return findTrainer(username, password).isPresent();
-    }
-
-    private Optional<Trainee> findTrainee(String username, String password) {
-        if (isBlank(username) || isBlank(password)) {
-            return Optional.empty();
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            loginAttemptService.recordFailure(username);
+            log.warn("Login failed for username={}", username);
+            throw new AuthenticationException(INVALID_CREDENTIALS);
         }
-        return traineeDao.findByUsername(username)
-                .filter(trainee -> passwordMatches(trainee.getUser(), password));
+
+        loginAttemptService.recordSuccess(username);
+        log.info("Login succeeded for username={}", username);
+        return jwtService.generateToken(username);
     }
 
-    private Optional<Trainer> findTrainer(String username, String password) {
-        if (isBlank(username) || isBlank(password)) {
-            return Optional.empty();
+    /** Token for a user that has just been created (registration returns it right away). */
+    public String issueToken(String username) {
+        return jwtService.generateToken(username);
+    }
+
+    private void rejectIfBlocked(String username) {
+        Duration remaining = loginAttemptService.remainingBlock(username);
+        if (remaining.isPositive()) {
+            long minutes = Math.max(1, remaining.plusSeconds(59).toMinutes());
+            log.warn("Login rejected: username={} is blocked for another {} minute(s)", username, minutes);
+            throw new TooManyAttemptsException(
+                    "Too many failed login attempts. Try again in " + minutes + " minute(s)");
         }
-        return trainerDao.findByUsername(username)
-                .filter(trainer -> passwordMatches(trainer.getUser(), password));
-    }
-
-    private boolean passwordMatches(User user, String password) {
-        return MessageDigest.isEqual(
-                user.getPassword().getBytes(StandardCharsets.UTF_8),
-                password.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private AuthenticationException failed(String username) {
-        log.warn("Authentication failed for username={}", username);
-        return new AuthenticationException("Invalid username or password");
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

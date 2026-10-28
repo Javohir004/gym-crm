@@ -1,12 +1,10 @@
 package com.epam.training.gym.controller;
 
 import com.epam.training.gym.dto.requests.AddTrainingRequest;
-import com.epam.training.gym.facade.GymFacade;
-import com.epam.training.gym.util.BasicAuthUtil;
+import com.epam.training.gym.service.TrainingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,10 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Training", description = "Adding a training session")
 public class TrainingController {
 
-    private final GymFacade facade;
+    private final TrainingService trainingService;
 
-    public TrainingController(GymFacade facade) {
-        this.facade = facade;
+    public TrainingController(TrainingService trainingService) {
+        this.trainingService = trainingService;
     }
 
     @PostMapping
@@ -30,11 +28,10 @@ public class TrainingController {
             description = "Training Type is not part of the request - it is taken from the trainer's specialization")
     @ApiResponse(responseCode = "200", description = "Training added")
     @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid token")
     @ApiResponse(responseCode = "404", description = "Trainee or trainer not found")
-    public ResponseEntity<Void> addTraining(@RequestBody AddTrainingRequest body, HttpServletRequest request) {
-        BasicAuthUtil.Credentials credentials = BasicAuthUtil.extract(request);
-        facade.addTraining(credentials.username(), credentials.password(),
-                body.traineeUsername(), body.trainerUsername(), body.trainingName(),
+    public ResponseEntity<Void> addTraining(@RequestBody AddTrainingRequest body) {
+        trainingService.addTraining(body.traineeUsername(), body.trainerUsername(), body.trainingName(),
                 body.trainingDate(), body.trainingDuration());
         return ResponseEntity.ok().build();
     }

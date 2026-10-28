@@ -1,8 +1,8 @@
 package controller;
 
 import com.epam.training.gym.controller.TrainingTypeController;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.TrainingType;
+import com.epam.training.gym.service.TrainingTypeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,18 +22,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TrainingTypeControllerTest {
 
     @Mock
-    private GymFacade facade;
+    private TrainingTypeService trainingTypeService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingTypeController(facade)).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingTypeController(trainingTypeService)).build();
     }
 
     @Test
-    void getAll_returns200WithList_andNeedsNoAuthorization() throws Exception {
-        when(facade.getTrainingTypes()).thenReturn(List.of(
+    void getAll_returns200WithList() throws Exception {
+        when(trainingTypeService.getAll()).thenReturn(List.of(
                 TrainingType.builder().id(1L).trainingTypeName("Fitness").build(),
                 TrainingType.builder().id(2L).trainingTypeName("Yoga").build()));
 

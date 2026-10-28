@@ -29,7 +29,6 @@ public class TraineeService {
 
     private TraineeDao traineeDao;
     private TrainerDao trainerDao;
-    private AuthenticationService authenticationService;
     private UserAccountService userAccountService;
 
     @Autowired
@@ -43,17 +42,13 @@ public class TraineeService {
     }
 
     @Autowired
-    public void setAuthenticationService(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
-    }
-
-    @Autowired
     public void setUserAccountService(UserAccountService userAccountService) {
         this.userAccountService = userAccountService;
     }
 
-    public Trainee createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
-        User user = userAccountService.newUser(firstName, lastName);
+    public Registration<Trainee> createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
+        Registration<User> account = userAccountService.newUser(firstName, lastName);
+        User user = account.profile();
         Trainee trainee = Trainee.builder()
                 .user(user)
                 .dateOfBirth(dateOfBirth)
@@ -61,52 +56,23 @@ public class TraineeService {
                 .build();
         traineeDao.save(trainee);
         log.info("Trainee profile created: username={}", user.getUsername());
-        return trainee;
+        return new Registration<>(trainee, account.rawPassword());
     }
 
     @Transactional(readOnly = true)
-    public boolean credentialsMatch(String username, String password) {
-        return authenticationService.traineeCredentialsMatch(username, password);
+    public Trainee getByUsername(String username) {
+        return findTrainee(username);
     }
 
-    @Transactional(readOnly = true)
-    public Trainee getByUsername(String username, String password) {
-        return authenticationService.authenticateTrainee(username, password);
-    }
-
-    public void changePassword(String username, String password, String newPassword) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
-        userAccountService.changePassword(trainee.getUser(), newPassword);
-    }
-
-    public Trainee update(String username, String password,
-                          String firstName, String lastName, LocalDate dateOfBirth, String address) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
-        Validation.requireText(firstName, "First name");
-        Validation.requireText(lastName, "Last name");
-
-        trainee.getUser().setFirstName(firstName.trim());
-        trainee.getUser().setLastName(lastName.trim());
-        trainee.setDateOfBirth(dateOfBirth);
-        trainee.setAddress(address);
-        log.info("Updating trainee profile: username={}", username);
-        return traineeDao.update(trainee);
-    }
-
-    public boolean toggleActive(String username, String password) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
-        return userAccountService.toggleActive(trainee.getUser());
-    }
-
-    public void setActive(String username, String password, boolean active) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public void setActive(String username, boolean active) {
+        Trainee trainee = findTrainee(username);
         userAccountService.setActive(trainee.getUser(), active);
     }
 
 
-    public Trainee updateFullProfile(String username, String password, String firstName, String lastName,
+    public Trainee updateFullProfile(String username, String firstName, String lastName,
                                      LocalDate dateOfBirth, String address, boolean isActive) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Trainee trainee = findTrainee(username);
         Validation.requireText(firstName, "First name");
         Validation.requireText(lastName, "Last name");
 
@@ -120,27 +86,20 @@ public class TraineeService {
     }
 
     @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedActiveTrainers(String username, String password) {
-        authenticationService.authenticateTrainee(username, password);
+    public List<Trainer> getUnassignedActiveTrainers(String username) {
+        findTrainee(username);
         log.debug("Looking up active trainers not assigned to trainee username={}", username);
         return trainerDao.findNotAssignedToTraineeActive(username);
     }
 
-    public void delete(String username, String password) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public void delete(String username) {
+        Trainee trainee = findTrainee(username);
         traineeDao.delete(trainee);
         log.info("Trainee profile deleted: username={}", username);
     }
 
-    @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedTrainers(String username, String password) {
-        authenticationService.authenticateTrainee(username, password);
-        log.debug("Looking up trainers not assigned to trainee username={}", username);
-        return trainerDao.findNotAssignedToTrainee(username);
-    }
-
-    public Trainee updateTrainers(String username, String password, Collection<String> trainerUsernames) {
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+    public Trainee updateTrainers(String username, Collection<String> trainerUsernames) {
+        Trainee trainee = findTrainee(username);
         Validation.requireNotNull(trainerUsernames, "Trainers list");
 
         Set<String> requested = new LinkedHashSet<>(trainerUsernames);
@@ -157,5 +116,10 @@ public class TraineeService {
         trainee.getTrainers().addAll(trainers);
         log.info("Updated trainers list of trainee username={}: {} trainer(s)", username, trainers.size());
         return traineeDao.update(trainee);
+    }
+
+    private Trainee findTrainee(String username) {
+        return traineeDao.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Trainee not found: " + username));
     }
 }

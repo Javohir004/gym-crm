@@ -2,7 +2,7 @@ package com.epam.training.gym.controller;
 
 import com.epam.training.gym.dto.DtoMapper;
 import com.epam.training.gym.dto.TrainingTypeDto;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.TrainingTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,16 +19,16 @@ import java.util.List;
 @Tag(name = "Training Type", description = "The constant list of training types")
 public class TrainingTypeController {
 
-    private final GymFacade facade;
+    private final TrainingTypeService trainingTypeService;
 
-    public TrainingTypeController(GymFacade facade) {
-        this.facade = facade;
+    public TrainingTypeController(TrainingTypeService trainingTypeService) {
+        this.trainingTypeService = trainingTypeService;
     }
 
     @GetMapping
     @Operation(summary = "List all training types")
     @ApiResponse(responseCode = "200", description = "List returned")
     public ResponseEntity<List<TrainingTypeDto>> getAll() {
-        return ResponseEntity.ok(DtoMapper.toTrainingTypeDtoList(facade.getTrainingTypes()));
+        return ResponseEntity.ok(DtoMapper.toTrainingTypeDtoList(trainingTypeService.getAll()));
     }
 }

@@ -4,8 +4,10 @@ package exception;
 import com.epam.training.gym.dto.ErrorResponse;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.ConflictException;
+import com.epam.training.gym.exception.ForbiddenException;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
 import com.epam.training.gym.exception.NotFoundException;
+import com.epam.training.gym.exception.TooManyAttemptsException;
 import com.epam.training.gym.exception.ValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,24 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertEquals(401, response.getBody().status());
+    }
+
+    @Test
+    void forbiddenException_mapsTo403() {
+        ResponseEntity<ErrorResponse> response = handler.handleForbidden(new ForbiddenException("Not your profile"));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals(403, response.getBody().status());
+        assertEquals("Not your profile", response.getBody().message());
+    }
+
+    @Test
+    void tooManyAttemptsException_mapsTo429() {
+        ResponseEntity<ErrorResponse> response = handler.handleTooManyAttempts(
+                new TooManyAttemptsException("Try again in 5 minute(s)"));
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        assertEquals(429, response.getBody().status());
     }
 
     @Test

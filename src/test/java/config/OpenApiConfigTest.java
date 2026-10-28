@@ -11,14 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class OpenApiConfigTest {
 
     @Test
-    void openApi_declaresBasicAuthScheme() {
+    void openApi_declaresBearerJwtScheme() {
         OpenAPI api = new OpenApiConfig().gymOpenAPI();
 
-        SecurityScheme scheme = api.getComponents().getSecuritySchemes().get("basicAuth");
+        SecurityScheme scheme = api.getComponents().getSecuritySchemes().get("bearerAuth");
 
         assertNotNull(scheme);
         assertEquals(SecurityScheme.Type.HTTP, scheme.getType());
-        assertEquals("basic", scheme.getScheme());
+        assertEquals("bearer", scheme.getScheme());
+        assertEquals("JWT", scheme.getBearerFormat());
         assertEquals("Gym CRM API", api.getInfo().getTitle());
     }
 }
