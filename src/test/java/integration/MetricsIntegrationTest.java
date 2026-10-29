@@ -16,10 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Sends real HTTP requests through the Spring proxies, so it proves that
- * the metrics aspect is wired correctly into the services.
- */
+
 @SpringBootTest(classes = GymCrmApplication.class,
         properties = "spring.datasource.url=jdbc:h2:mem:metrics-test;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc

@@ -26,10 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * The whole security chain with real HTTP-style requests: registration, login, JWT,
- * brute-force blocking, logout and CORS.
- */
+
 @SpringBootTest(classes = GymCrmApplication.class,
         properties = "spring.datasource.url=jdbc:h2:mem:security-test;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
@@ -43,7 +40,6 @@ class SecurityIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    /** Registered account: generated username, generated password and the token from registration. */
     private record Account(String username, String password, String token) {
         String bearer() {
             return "Bearer " + token;

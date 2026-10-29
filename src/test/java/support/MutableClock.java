@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-/** A clock the test can move forward, so time-based rules need no sleeping. */
 public final class MutableClock extends Clock {
 
     private Instant now;

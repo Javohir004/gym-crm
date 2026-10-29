@@ -27,7 +27,6 @@ class DatabaseResponseTimeHealthIndicatorTest {
 
     @BeforeEach
     void setUp() {
-        // nothing shared: every test builds its own indicator
     }
 
     @Test
