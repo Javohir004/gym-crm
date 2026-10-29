@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 
 import java.util.Optional;
 
-/** Reads the token out of an {@code Authorization: Bearer <token>} header. */
 public final class BearerToken {
 
     private static final String PREFIX = "Bearer ";

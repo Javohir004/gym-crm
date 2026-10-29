@@ -18,7 +18,6 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Creates and verifies signed (HS256) JWT access tokens. */
 @Service
 public class JwtService {
 

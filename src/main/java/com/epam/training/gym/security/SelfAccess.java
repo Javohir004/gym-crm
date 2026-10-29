@@ -5,7 +5,6 @@ import com.epam.training.gym.exception.ForbiddenException;
 
 import java.security.Principal;
 
-/** A user may only work with his or her own profile. */
 public final class SelfAccess {
 
     private SelfAccess() {

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/** Answers 401 in the same JSON shape as the rest of the API. */
 @Component
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

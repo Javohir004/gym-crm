@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
 
-/** Logout: the token in the request is put on the blacklist, so it cannot be used again. */
 @Component
 public class JwtLogoutHandler implements LogoutHandler {
 

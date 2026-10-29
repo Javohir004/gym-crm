@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-/** Login (username + password -> JWT) with brute-force protection. */
 @Service
 public class AuthenticationService {
 

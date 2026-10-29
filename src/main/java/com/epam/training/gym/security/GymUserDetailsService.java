@@ -7,7 +7,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Lets Spring Security look users up in our database (password is the stored BCrypt hash). */
 @Service
 public class GymUserDetailsService implements UserDetailsService {
 

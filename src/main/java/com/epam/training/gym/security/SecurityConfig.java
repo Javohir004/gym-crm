@@ -32,7 +32,6 @@ public class SecurityConfig {
 
     static final String LOGOUT_URL = "/api/logout";
 
-    /** Open without a token: creating a profile and logging in. */
     private static final String[] PUBLIC_POST = {"/api/trainees", "/api/trainers", "/api/login"};
     private static final String[] API_DOCS = {"/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"};
     private static final String[] OPERATIONS = {"/actuator/health/**", "/actuator/info", "/actuator/prometheus"};
@@ -63,7 +62,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /** BCrypt: a random salt is generated per password and stored inside the hash itself. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

@@ -7,10 +7,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Tokens revoked by logout. A JWT is stateless, so "logout" means remembering its id
- * until the token would have expired anyway; after that the entry is dropped.
- */
+
 @Component
 public class TokenBlacklist {
 

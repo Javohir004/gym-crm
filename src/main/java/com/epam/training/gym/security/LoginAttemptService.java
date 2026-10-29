@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Brute-force protection: too many failed logins block the username for a while. */
 @Service
 public class LoginAttemptService {
 
@@ -37,7 +36,6 @@ public class LoginAttemptService {
         return remainingBlock(username).isPositive();
     }
 
-    /** Time left until the username may try again; zero if it is not blocked. */
     public Duration remainingBlock(String username) {
         Attempts current = attempts.get(username);
         if (current == null || current.blockedUntil() == null) {
@@ -47,7 +45,7 @@ public class LoginAttemptService {
         if (now.isBefore(current.blockedUntil())) {
             return Duration.between(now, current.blockedUntil());
         }
-        attempts.remove(username, current); // block is over: start from a clean slate
+        attempts.remove(username, current);
         return Duration.ZERO;
     }
 
