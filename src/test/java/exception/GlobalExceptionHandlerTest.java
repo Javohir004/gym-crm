@@ -1,7 +1,7 @@
 package exception;
 
 
-import com.epam.training.gym.dto.ErrorResponse;
+import com.epam.training.gym.dto.responses.ErrorResponse;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.ConflictException;
 import com.epam.training.gym.exception.ForbiddenException;

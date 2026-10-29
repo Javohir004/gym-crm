@@ -1,7 +1,7 @@
 package com.epam.training.gym.controller;
 
-import com.epam.training.gym.dto.DtoMapper;
-import com.epam.training.gym.dto.TrainerTrainingDto;
+import com.epam.training.gym.dto.dto.DtoMapper;
+import com.epam.training.gym.dto.dto.TrainerTrainingDto;
 import com.epam.training.gym.dto.requests.ActivateRequest;
 import com.epam.training.gym.dto.requests.TrainerRegistrationRequest;
 import com.epam.training.gym.dto.requests.UpdateTrainerProfileRequest;
@@ -104,7 +104,7 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
-    /** 16. Activate/De-activate Trainer (PATCH). */
+
     @PatchMapping("/{username}/status")
     @Operation(summary = "Activate or de-activate this trainer")
     @ApiResponse(responseCode = "200", description = "Status updated")

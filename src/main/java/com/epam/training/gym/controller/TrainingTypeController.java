@@ -1,7 +1,7 @@
 package com.epam.training.gym.controller;
 
-import com.epam.training.gym.dto.DtoMapper;
-import com.epam.training.gym.dto.TrainingTypeDto;
+import com.epam.training.gym.dto.dto.DtoMapper;
+import com.epam.training.gym.dto.dto.TrainingTypeDto;
 import com.epam.training.gym.service.TrainingTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

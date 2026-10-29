@@ -1,6 +1,6 @@
 package com.epam.training.gym.dto.responses;
 
-import com.epam.training.gym.dto.TraineeShortDto;
+import com.epam.training.gym.dto.dto.TraineeShortDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;

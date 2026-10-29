@@ -1,9 +1,9 @@
 package com.epam.training.gym.controller;
 
 
-import com.epam.training.gym.dto.DtoMapper;
-import com.epam.training.gym.dto.TraineeTrainingDto;
-import com.epam.training.gym.dto.TrainerShortDto;
+import com.epam.training.gym.dto.dto.DtoMapper;
+import com.epam.training.gym.dto.dto.TraineeTrainingDto;
+import com.epam.training.gym.dto.dto.TrainerShortDto;
 import com.epam.training.gym.dto.requests.ActivateRequest;
 import com.epam.training.gym.dto.requests.TraineeRegistrationRequest;
 import com.epam.training.gym.dto.requests.UpdateTraineeProfileRequest;

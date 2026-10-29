@@ -1,6 +1,6 @@
 package com.epam.training.gym.security;
 
-import com.epam.training.gym.dto.ErrorResponse;
+import com.epam.training.gym.dto.responses.ErrorResponse;
 import com.epam.training.gym.logging.TransactionIdFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;

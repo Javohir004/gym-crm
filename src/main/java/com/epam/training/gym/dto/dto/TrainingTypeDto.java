@@ -1,4 +1,4 @@
-package com.epam.training.gym.dto;
+package com.epam.training.gym.dto.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -1,6 +1,6 @@
 package com.epam.training.gym.exception;
 
-import com.epam.training.gym.dto.ErrorResponse;
+import com.epam.training.gym.dto.responses.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
