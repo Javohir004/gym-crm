@@ -97,7 +97,6 @@ public class TrainerController {
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
-    /** 16. Activate/De-activate Trainer (PATCH). */
     @PatchMapping("/{username}/status")
     @Operation(summary = "Activate or de-activate this trainer")
     @ApiResponse(responseCode = "200", description = "Status updated")

@@ -20,7 +20,6 @@ public final class BasicAuthUtil {
         }
     }
 
-    /** Credentials from the header, which must belong to the user named in the URL (and in the body, if any). */
     public static Credentials extractFor(HttpServletRequest request, String pathUsername, String... bodyUsernames) {
         for (String bodyUsername : bodyUsernames) {
             requireSameUser(pathUsername, bodyUsername);
