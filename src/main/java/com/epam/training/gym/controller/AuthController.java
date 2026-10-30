@@ -28,7 +28,7 @@ public class AuthController {
         this.userAccountService = userAccountService;
     }
 
-    @GetMapping("/api/login")
+    @GetMapping(ApiPaths.V1 + "/login")
     @Operation(summary = "Login",
             description = "Checks that the username and password from the Basic Authorization header match. "
                     + "Credentials are never sent in the URL, so they do not end up in access logs or browser history")
@@ -40,7 +40,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/api/login")
+    @PutMapping(ApiPaths.V1 + "/login")
     @Operation(summary = "Change password", description = "Requires the current password")
     @ApiResponse(responseCode = "200", description = "Password changed")
     @ApiResponse(responseCode = "400", description = "Validation error")

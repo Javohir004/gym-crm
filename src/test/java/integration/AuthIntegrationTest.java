@@ -33,7 +33,7 @@ class AuthIntegrationTest {
 
     @Test
     void registeredPassword_isStoredAsBcryptHash_andStillLogsIn() throws Exception {
-        String response = mockMvc.perform(post("/api/trainees").contentType(MediaType.APPLICATION_JSON)
+        String response = mockMvc.perform(post("/api/v1/trainees").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"firstName\":\"Hash\",\"lastName\":\"Check\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -45,29 +45,39 @@ class AuthIntegrationTest {
         assertNotEquals(password, stored);
         assertTrue(stored.startsWith("$2a$"));
 
-        mockMvc.perform(get("/api/login").header("Authorization", BasicAuthHeader.value(username, password)))
+        mockMvc.perform(get("/api/v1/login").header("Authorization", BasicAuthHeader.value(username, password)))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/login").header("Authorization", BasicAuthHeader.value(username, stored)))
+        mockMvc.perform(get("/api/v1/login").header("Authorization", BasicAuthHeader.value(username, stored)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
+    void unversionedPath_isNotServed_onlyV1Is() throws Exception {
+        mockMvc.perform(post("/api/trainees").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\":\"No\",\"lastName\":\"Version\"}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/trainees").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\":\"With\",\"lastName\":\"Version\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void changedPassword_replacesTheOldOne() throws Exception {
-        String response = mockMvc.perform(post("/api/trainees").contentType(MediaType.APPLICATION_JSON)
+        String response = mockMvc.perform(post("/api/v1/trainees").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"firstName\":\"Change\",\"lastName\":\"Me\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String username = JsonPath.read(response, "$.username");
         String password = JsonPath.read(response, "$.password");
 
-        mockMvc.perform(put("/api/login").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/api/v1/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"oldPassword\":\"" + password
                                 + "\",\"newPassword\":\"BrandNew123\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/login").header("Authorization", BasicAuthHeader.value(username, "BrandNew123")))
+        mockMvc.perform(get("/api/v1/login").header("Authorization", BasicAuthHeader.value(username, "BrandNew123")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/login").header("Authorization", BasicAuthHeader.value(username, password)))
+        mockMvc.perform(get("/api/v1/login").header("Authorization", BasicAuthHeader.value(username, password)))
                 .andExpect(status().isUnauthorized());
     }
 }

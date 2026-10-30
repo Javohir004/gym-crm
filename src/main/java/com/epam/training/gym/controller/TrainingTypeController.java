@@ -18,7 +18,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/api/training-types")
+@RequestMapping(ApiPaths.V1 + "/training-types")
 @Tag(name = "Training Type", description = "The constant list of training types")
 public class TrainingTypeController {
 

@@ -166,7 +166,7 @@ scrape_configs:
 
 ## REST API (17 endpoints)
 
-Base URL: `http://localhost:8081/api`
+Base URL: `http://localhost:8081/api/v1` (every path in the table below is relative to it)
 
 ### Swagger UI
 
@@ -223,6 +223,9 @@ Actuator and Swagger endpoints are not behind this check.
 - **Passwords are stored as BCrypt hashes** (`spring-security-crypto`, no
   Spring Security filter chain). The plain generated password exists only in
   the registration response; login compares with `PasswordEncoder.matches`.
+- **API versioning:** URL based. Every endpoint lives under `/api/v1`,
+  defined once in `ApiPaths.V1`; a breaking change would get `/api/v2` so
+  existing clients keep working. Unversioned paths (`/api/trainees`) return 404.
 - **No facade layer:** controllers call the services directly; the services
   own authentication, validation and transactions.
 - **Add Training (14) has no Training Type field.** The training's type is

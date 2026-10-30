@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/trainings")
+@RequestMapping(ApiPaths.V1 + "/trainings")
 @Tag(name = "Training", description = "Adding a training session")
 public class TrainingController {
 

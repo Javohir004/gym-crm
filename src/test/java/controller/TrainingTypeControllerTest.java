@@ -51,7 +51,7 @@ class TrainingTypeControllerTest {
                 TrainingType.builder().id(1L).trainingTypeName("Fitness").build(),
                 TrainingType.builder().id(2L).trainingTypeName("Yoga").build()));
 
-        mockMvc.perform(get("/api/training-types")
+        mockMvc.perform(get("/api/v1/training-types")
                         .header(HttpHeaders.AUTHORIZATION, BasicAuthHeader.value(USER, PASS)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainingType").value("Fitness"))
@@ -61,7 +61,7 @@ class TrainingTypeControllerTest {
 
     @Test
     void getAll_withoutAuthorizationHeader_returns401() throws Exception {
-        mockMvc.perform(get("/api/training-types"))
+        mockMvc.perform(get("/api/v1/training-types"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(authenticationService, trainingTypeService);
@@ -72,7 +72,7 @@ class TrainingTypeControllerTest {
         when(authenticationService.authenticate(USER, "wrong"))
                 .thenThrow(new AuthenticationException("Invalid username or password"));
 
-        mockMvc.perform(get("/api/training-types")
+        mockMvc.perform(get("/api/v1/training-types")
                         .header(HttpHeaders.AUTHORIZATION, BasicAuthHeader.value(USER, "wrong")))
                 .andExpect(status().isUnauthorized());
 

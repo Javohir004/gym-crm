@@ -68,7 +68,7 @@ class TrainerControllerTest {
                 {"firstName":"Anna","lastName":"Lee","specialization":"Yoga"}
                 """;
 
-        mockMvc.perform(post("/api/trainers").contentType("application/json").content(body))
+        mockMvc.perform(post("/api/v1/trainers").contentType("application/json").content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value(USERNAME))
                 .andExpect(jsonPath("$.password").value(PASSWORD));
@@ -82,7 +82,7 @@ class TrainerControllerTest {
         trainer.setTrainees(Set.of(Trainee.builder().user(traineeUser).build()));
         when(trainerService.getByUsername(USERNAME, PASSWORD)).thenReturn(trainer);
 
-        mockMvc.perform(get("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.specialization").value("Yoga"))
                 .andExpect(jsonPath("$.trainees[0].username").value("John.Doe"));
@@ -100,7 +100,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","firstName":"Anna","lastName":"Lee","specialization":"Fitness","isActive":true}
                 """;
 
-        mockMvc.perform(put("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.specialization").value("Yoga"));
@@ -112,7 +112,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","firstName":"Anna","lastName":"Lee"}
                 """;
 
-        mockMvc.perform(put("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainers/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -126,7 +126,7 @@ class TrainerControllerTest {
                 .build();
         when(trainingService.getTrainerTrainings(USERNAME, PASSWORD, null, null, null)).thenReturn(List.of(training));
 
-        mockMvc.perform(get("/api/trainers/" + USERNAME + "/trainings").header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get("/api/v1/trainers/" + USERNAME + "/trainings").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].traineeName").value("John Doe"));
     }
@@ -137,7 +137,7 @@ class TrainerControllerTest {
                 {"username":"Anna.Lee","isActive":false}
                 """;
 
-        mockMvc.perform(patch("/api/trainers/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(patch("/api/v1/trainers/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk());
     }

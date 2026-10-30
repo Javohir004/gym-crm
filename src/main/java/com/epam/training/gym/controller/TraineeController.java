@@ -41,7 +41,7 @@ import java.time.LocalDate;
 
 
 @RestController
-@RequestMapping("/api/trainees")
+@RequestMapping(ApiPaths.V1 + "/trainees")
 @Tag(name = "Trainee", description = "Trainee registration, profile, trainers list and trainings")
 public class TraineeController {
 

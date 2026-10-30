@@ -57,7 +57,7 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(post("/api/v1/trainings").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk());
 
@@ -75,7 +75,7 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(post("/api/v1/trainings").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isNotFound());
     }
@@ -87,7 +87,7 @@ class TrainingControllerTest {
                  "trainingName":"Morning Yoga","trainingDate":"2026-09-01","trainingDuration":60}
                 """;
 
-        mockMvc.perform(post("/api/trainings").contentType("application/json").content(body))
+        mockMvc.perform(post("/api/v1/trainings").contentType("application/json").content(body))
                 .andExpect(status().isUnauthorized());
     }
 }

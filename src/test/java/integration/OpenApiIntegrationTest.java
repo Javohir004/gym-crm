@@ -25,9 +25,9 @@ class OpenApiIntegrationTest {
     void apiDocs_listTheRestEndpointsAndBasicAuth() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/trainees']").exists())
-                .andExpect(jsonPath("$.paths['/api/login']").exists())
-                .andExpect(jsonPath("$.paths['/api/training-types']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/trainees']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/login']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/training-types']").exists())
                 .andExpect(jsonPath("$.components.securitySchemes.basicAuth.scheme").value("basic"));
     }
 }

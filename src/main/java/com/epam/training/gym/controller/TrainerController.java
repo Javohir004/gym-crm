@@ -36,7 +36,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/trainers")
+@RequestMapping(ApiPaths.V1 + "/trainers")
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
 public class TrainerController {
 

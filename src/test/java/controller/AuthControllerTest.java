@@ -43,7 +43,7 @@ class AuthControllerTest {
 
     @Test
     void login_returns200_whenHeaderCredentialsMatch() throws Exception {
-        mockMvc.perform(get("/api/login")
+        mockMvc.perform(get("/api/v1/login")
                         .header(HttpHeaders.AUTHORIZATION, BasicAuthHeader.value("John.Doe", "pass123456")))
                 .andExpect(status().isOk());
 
@@ -55,7 +55,7 @@ class AuthControllerTest {
         when(authenticationService.authenticate("John.Doe", "wrong"))
                 .thenThrow(new AuthenticationException("Invalid username or password"));
 
-        mockMvc.perform(get("/api/login")
+        mockMvc.perform(get("/api/v1/login")
                         .header(HttpHeaders.AUTHORIZATION, BasicAuthHeader.value("John.Doe", "wrong")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid username or password"));
@@ -63,7 +63,7 @@ class AuthControllerTest {
 
     @Test
     void login_ignoresCredentialsInQueryParameters() throws Exception {
-        mockMvc.perform(get("/api/login").param("username", "John.Doe").param("password", "pass123456"))
+        mockMvc.perform(get("/api/v1/login").param("username", "John.Doe").param("password", "pass123456"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(authenticationService);
@@ -75,7 +75,7 @@ class AuthControllerTest {
                 {"username":"John.Doe","oldPassword":"oldPass123","newPassword":"newPass123"}
                 """;
 
-        mockMvc.perform(put("/api/login").contentType("application/json").content(body))
+        mockMvc.perform(put("/api/v1/login").contentType("application/json").content(body))
                 .andExpect(status().isOk());
 
         verify(userAccountService).changePassword("John.Doe", "oldPass123", "newPass123");

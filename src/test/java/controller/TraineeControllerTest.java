@@ -77,7 +77,7 @@ class TraineeControllerTest {
                 {"firstName":"John","lastName":"Doe","dateOfBirth":"2000-01-15","address":"Tashkent"}
                 """;
 
-        mockMvc.perform(post("/api/trainees").contentType("application/json").content(body))
+        mockMvc.perform(post("/api/v1/trainees").contentType("application/json").content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value(USERNAME))
                 .andExpect(jsonPath("$.password").value(PASSWORD));
@@ -93,7 +93,7 @@ class TraineeControllerTest {
         trainee.setTrainers(Set.of(trainer));
         when(traineeService.getByUsername(USERNAME, PASSWORD)).thenReturn(trainee);
 
-        mockMvc.perform(get("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get("/api/v1/trainees/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.isActive").value(true))
@@ -103,7 +103,7 @@ class TraineeControllerTest {
 
     @Test
     void getProfile_returns401_whenMissingAuthorizationHeader() throws Exception {
-        mockMvc.perform(get("/api/trainees/" + USERNAME))
+        mockMvc.perform(get("/api/v1/trainees/" + USERNAME))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -118,7 +118,7 @@ class TraineeControllerTest {
                  "dateOfBirth":"2000-01-15","address":"Yunusobod","isActive":false}
                 """;
 
-        mockMvc.perform(put("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isActive").value(false));
@@ -130,7 +130,7 @@ class TraineeControllerTest {
                 {"username":"John.Doe","firstName":"John","lastName":"Doe"}
                 """;
 
-        mockMvc.perform(put("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -141,14 +141,14 @@ class TraineeControllerTest {
                 {"username":"Someone.Else","firstName":"John","lastName":"Doe","isActive":true}
                 """;
 
-        mockMvc.perform(put("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainees/" + USERNAME).header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void delete_returns200() throws Exception {
-        mockMvc.perform(delete("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER))
+        mockMvc.perform(delete("/api/v1/trainees/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk());
     }
 
@@ -159,7 +159,7 @@ class TraineeControllerTest {
         Trainer trainer = Trainer.builder().user(trainerUser).specialization(fitness).build();
         when(traineeService.getUnassignedActiveTrainers(USERNAME, PASSWORD)).thenReturn(List.of(trainer));
 
-        mockMvc.perform(get("/api/trainees/" + USERNAME + "/unassigned-trainers")
+        mockMvc.perform(get("/api/v1/trainees/" + USERNAME + "/unassigned-trainers")
                         .header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].username").value("Mark.King"));
@@ -179,7 +179,7 @@ class TraineeControllerTest {
                 {"traineeUsername":"John.Doe","trainers":["Anna.Lee"]}
                 """;
 
-        mockMvc.perform(put("/api/trainees/" + USERNAME + "/trainers").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(put("/api/v1/trainees/" + USERNAME + "/trainers").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trainers[0].username").value("Anna.Lee"));
@@ -195,7 +195,7 @@ class TraineeControllerTest {
         when(trainingService.getTraineeTrainings(USERNAME, PASSWORD, null, null, "anna", null))
                 .thenReturn(List.of(training));
 
-        mockMvc.perform(get("/api/trainees/" + USERNAME + "/trainings")
+        mockMvc.perform(get("/api/v1/trainees/" + USERNAME + "/trainings")
                         .header("Authorization", AUTH_HEADER).param("trainerName", "anna"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainingName").value("Morning Yoga"))
@@ -208,7 +208,7 @@ class TraineeControllerTest {
                 {"username":"John.Doe","isActive":false}
                 """;
 
-        mockMvc.perform(patch("/api/trainees/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(patch("/api/v1/trainees/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isOk());
     }
@@ -222,7 +222,7 @@ class TraineeControllerTest {
                 {"username":"John.Doe","isActive":false}
                 """;
 
-        mockMvc.perform(patch("/api/trainees/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
+        mockMvc.perform(patch("/api/v1/trainees/" + USERNAME + "/status").header("Authorization", AUTH_HEADER)
                         .contentType("application/json").content(body))
                 .andExpect(status().isConflict());
     }

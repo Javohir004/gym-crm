@@ -50,7 +50,7 @@ class MetricsIntegrationTest {
     void registeringATrainee_returns201_andCountsIt() throws Exception {
         double before = count("gym.registrations", "role", "trainee");
 
-        register("/api/trainees",
+        register("/api/v1/trainees",
                 "{\"firstName\":\"Metric\",\"lastName\":\"Trainee\",\"dateOfBirth\":\"2000-01-15\",\"address\":\"Tashkent\"}");
 
         assertEquals(before + 1, count("gym.registrations", "role", "trainee"));
@@ -60,7 +60,7 @@ class MetricsIntegrationTest {
     void registeringATrainer_returns201_andCountsIt() throws Exception {
         double before = count("gym.registrations", "role", "trainer");
 
-        register("/api/trainers", "{\"firstName\":\"Metric\",\"lastName\":\"Trainer\",\"specialization\":\"Yoga\"}");
+        register("/api/v1/trainers", "{\"firstName\":\"Metric\",\"lastName\":\"Trainer\",\"specialization\":\"Yoga\"}");
 
         assertEquals(before + 1, count("gym.registrations", "role", "trainer"));
     }
@@ -71,7 +71,7 @@ class MetricsIntegrationTest {
 
         String basic = "Basic " + Base64.getEncoder().encodeToString("No.Body:wrong".getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(get("/api/login").header("Authorization", basic))
+        mockMvc.perform(get("/api/v1/login").header("Authorization", basic))
                 .andExpect(status().isUnauthorized());
 
         assertEquals(before + 1, count("gym.authentication.failures"));
@@ -79,8 +79,8 @@ class MetricsIntegrationTest {
 
     @Test
     void addingATraining_returns200_andCountsIt() throws Exception {
-        String trainee = register("/api/trainees", "{\"firstName\":\"Train\",\"lastName\":\"Ee\"}");
-        String trainer = register("/api/trainers", "{\"firstName\":\"Train\",\"lastName\":\"Er\",\"specialization\":\"Yoga\"}");
+        String trainee = register("/api/v1/trainees", "{\"firstName\":\"Train\",\"lastName\":\"Ee\"}");
+        String trainer = register("/api/v1/trainers", "{\"firstName\":\"Train\",\"lastName\":\"Er\",\"specialization\":\"Yoga\"}");
         String traineeUser = JsonPath.read(trainee, "$.username");
         String traineePass = JsonPath.read(trainee, "$.password");
         String trainerUser = JsonPath.read(trainer, "$.username");
@@ -89,7 +89,7 @@ class MetricsIntegrationTest {
 
         double before = count("gym.trainings.added");
 
-        mockMvc.perform(post("/api/trainings")
+        mockMvc.perform(post("/api/v1/trainings")
                         .header("Authorization", basic)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"traineeUsername\":\"" + traineeUser + "\",\"trainerUsername\":\"" + trainerUser
