@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -290,11 +291,21 @@ class GymFacadeTest {
     }
 
     @Test
-    void getTrainingTypes_delegatesToTrainingTypeService() {
+    void getTrainingTypes_authenticatesThenDelegatesToTrainingTypeService() {
         List<TrainingType> types = List.of(TrainingType.builder().trainingTypeName("Yoga").build());
         when(trainingTypeService.getAll()).thenReturn(types);
 
-        assertSame(types, facade.getTrainingTypes());
+        assertSame(types, facade.getTrainingTypes(USER, PASS));
+        verify(authenticationService).authenticate(USER, PASS);
+    }
+
+    @Test
+    void getTrainingTypes_wrongPassword_throwsAndDoesNotReadTypes() {
+        when(authenticationService.authenticate(USER, "wrong"))
+                .thenThrow(new AuthenticationException("Invalid username or password"));
+
+        assertThrows(AuthenticationException.class, () -> facade.getTrainingTypes(USER, "wrong"));
+        verifyNoInteractions(trainingTypeService);
     }
 
 

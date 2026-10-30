@@ -70,7 +70,14 @@
           "pm.collectionVariables.set('traineePassword', 'NewPass123');"
         ]}
       }],
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/training-types" }
+      "request": {
+        "method": "GET",
+        "auth": { "type": "basic", "basic": [
+          { "key": "username", "value": "{{traineeUsername}}" },
+          { "key": "password", "value": "{{traineePassword}}" }
+        ]},
+        "url": "{{baseUrl}}/api/training-types"
+      }
     },
     {
       "name": "5. Get Trainee Profile",
@@ -209,6 +216,10 @@
       "name": "17. Get Training Types",
       "request": {
         "method": "GET",
+        "auth": { "type": "basic", "basic": [
+          { "key": "username", "value": "{{traineeUsername}}" },
+          { "key": "password", "value": "{{traineePassword}}" }
+        ]},
         "url": "{{baseUrl}}/api/training-types"
       }
     },

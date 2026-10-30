@@ -14,8 +14,14 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,6 +96,35 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
+    }
+
+    @Test
+    void missingRequestParameter_returns400_notServerError() {
+        var response = handler.handleMissingParameter(new MissingServletRequestParameterException("username", "String"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Missing required parameter: username", response.getBody().message());
+    }
+
+    @Test
+    void parameterTypeMismatch_returns400_notServerError() {
+        var exception = new MethodArgumentTypeMismatchException("abc", LocalDate.class, "periodFrom", null, null);
+
+        var response = handler.handleTypeMismatch(exception);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Invalid value for parameter: periodFrom", response.getBody().message());
+    }
+
+    @Test
+    void malformedBody_returns400_withoutParserDetails() {
+        var exception = new HttpMessageNotReadableException("JSON parse error at line 1",
+                new MockHttpInputMessage(new byte[0]));
+
+        var response = handler.handleUnreadableBody(exception);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Malformed request body", response.getBody().message());
     }
 
     @Test

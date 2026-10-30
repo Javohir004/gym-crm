@@ -91,7 +91,9 @@ The default profile is `local` (`spring.profiles.active=local` in
 Notes:
 
 - In `prod` the credentials have no defaults on purpose: the application
-  refuses to start if `DB_USERNAME` / `DB_PASSWORD` are missing.
+  refuses to start if `DB_USERNAME` / `DB_PASSWORD` are missing. Spring would
+  otherwise use the literal `${DB_USERNAME}` text, so `ProdDatabaseCredentialsCheck`
+  (an `EnvironmentPostProcessor`) enforces it before the DataSource is created.
 - The H2 files are created in the `data/` folder (git-ignored). With the
   `update` mode a fresh file database gets its tables on the first start; to
   reset a `dev` / `stg` / `prod` database, stop the app and delete its file
@@ -226,8 +228,9 @@ Actuator and Swagger endpoints are not behind this check.
   state the resource is **already** in returns **409 Conflict**.
 - **Delete Trainee (7):** hard delete; the user row and all of the trainee's
   trainings are deleted too (cascade).
-- **Get Training types (17) needs no authentication.** It is a small, public,
-  constant list.
+- **Authentication:** every endpoint except Create Trainee (1) and Create
+  Trainer (2) needs HTTP Basic credentials, checked against the stored
+  username/password. Get Training types (17) accepts any trainee or trainer.
 - **Error handling:** every exception maps to the same JSON shape
   (`message`, `status`, `transactionId`) via one `@RestControllerAdvice`:
   400 (validation), 401 (auth), 404 (not found, including unknown URLs),

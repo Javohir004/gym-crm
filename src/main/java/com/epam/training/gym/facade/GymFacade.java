@@ -198,8 +198,9 @@ public class GymFacade {
         userAccountService.changePassword(user, newPassword);
     }
 
-    public List<TrainingType> getTrainingTypes() {
-        log.info("Facade: getTrainingTypes");
+    public List<TrainingType> getTrainingTypes(String username, String password) {
+        log.info("Facade: getTrainingTypes username={}", username);
+        authenticationService.authenticate(username, password);
         return trainingTypeService.getAll();
     }
 }
