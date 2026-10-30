@@ -50,7 +50,11 @@
       "name": "3. Login (Trainee)",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/login?username={{traineeUsername}}&password={{traineePassword}}"
+        "auth": { "type": "basic", "basic": [
+          { "key": "username", "value": "{{traineeUsername}}" },
+          { "key": "password", "value": "{{traineePassword}}" }
+        ]},
+        "url": "{{baseUrl}}/api/login"
       }
     },
     {

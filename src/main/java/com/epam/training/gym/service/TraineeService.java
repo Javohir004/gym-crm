@@ -52,8 +52,9 @@ public class TraineeService {
         this.userAccountService = userAccountService;
     }
 
-    public Trainee createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
-        User user = userAccountService.newUser(firstName, lastName);
+    public GeneratedCredentials createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
+        UserAccountService.NewAccount account = userAccountService.newUser(firstName, lastName);
+        User user = account.user();
         Trainee trainee = Trainee.builder()
                 .user(user)
                 .dateOfBirth(dateOfBirth)
@@ -61,7 +62,7 @@ public class TraineeService {
                 .build();
         traineeDao.save(trainee);
         log.info("Trainee profile created: username={}", user.getUsername());
-        return trainee;
+        return new GeneratedCredentials(user.getUsername(), account.rawPassword());
     }
 
     @Transactional(readOnly = true)

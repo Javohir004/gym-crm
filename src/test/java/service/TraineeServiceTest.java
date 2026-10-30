@@ -11,6 +11,7 @@ import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.User;
 import com.epam.training.gym.service.AuthenticationService;
 import com.epam.training.gym.service.TraineeService;
+import com.epam.training.gym.service.GeneratedCredentials;
 import com.epam.training.gym.service.UserAccountService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,9 +78,9 @@ class TraineeServiceTest {
 
     @Test
     void createTrainee_savesTraineeWithGeneratedUser() {
-        when(userAccountService.newUser("John", "Doe")).thenReturn(user);
+        when(userAccountService.newUser("John", "Doe")).thenReturn(new UserAccountService.NewAccount(user, PASSWORD));
 
-        Trainee result = service.createTrainee("John", "Doe", LocalDate.of(2000, 1, 1), "Tashkent");
+        GeneratedCredentials result = service.createTrainee("John", "Doe", LocalDate.of(2000, 1, 1), "Tashkent");
 
         ArgumentCaptor<Trainee> captor = ArgumentCaptor.forClass(Trainee.class);
         verify(traineeDao).save(captor.capture());
@@ -87,7 +88,8 @@ class TraineeServiceTest {
         assertSame(user, saved.getUser());
         assertEquals(LocalDate.of(2000, 1, 1), saved.getDateOfBirth());
         assertEquals("Tashkent", saved.getAddress());
-        assertSame(saved, result);
+        assertEquals(USERNAME, result.username());
+        assertEquals(PASSWORD, result.password());
     }
 
     @Test
@@ -101,7 +103,7 @@ class TraineeServiceTest {
 
     @Test
     void createTrainee_logsCreation_withoutLeakingPassword() {
-        when(userAccountService.newUser("John", "Doe")).thenReturn(user);
+        when(userAccountService.newUser("John", "Doe")).thenReturn(new UserAccountService.NewAccount(user, PASSWORD));
 
         try (LogCapture logs = new LogCapture(TraineeService.class)) {
             service.createTrainee("John", "Doe", null, null);

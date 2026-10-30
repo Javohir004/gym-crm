@@ -2,9 +2,11 @@ package service;
 
 import ch.qos.logback.classic.Level;
 import com.epam.training.gym.dao.UserDao;
+import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.ConflictException;
 import com.epam.training.gym.exception.ValidationException;
 import com.epam.training.gym.model.User;
+import com.epam.training.gym.service.AuthenticationService;
 import com.epam.training.gym.service.PasswordGenerator;
 import com.epam.training.gym.service.UserAccountService;
 import com.epam.training.gym.service.UsernameGenerator;
@@ -13,10 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import support.LogCapture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +40,11 @@ class UserAccountServiceTest {
     private UsernameGenerator usernameGenerator;
     @Mock
     private PasswordGenerator passwordGenerator;
+    @Mock
+    private AuthenticationService authenticationService;
+
+    // low cost factor keeps the tests fast; production uses the BCrypt default
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
 
     private UserAccountService service;
 
@@ -43,6 +54,8 @@ class UserAccountServiceTest {
         service.setUserDao(userDao);
         service.setUsernameGenerator(usernameGenerator);
         service.setPasswordGenerator(passwordGenerator);
+        service.setPasswordEncoder(passwordEncoder);
+        service.setAuthenticationService(authenticationService);
     }
 
     @Test
@@ -50,13 +63,27 @@ class UserAccountServiceTest {
         when(usernameGenerator.generate("John", "Doe")).thenReturn("John.Doe");
         when(passwordGenerator.generate()).thenReturn("aB3dE7fG9h");
 
-        User user = service.newUser("John", "Doe");
+        UserAccountService.NewAccount account = service.newUser("John", "Doe");
+        User user = account.user();
 
         assertEquals("John", user.getFirstName());
         assertEquals("Doe", user.getLastName());
         assertEquals("John.Doe", user.getUsername());
-        assertEquals("aB3dE7fG9h", user.getPassword());
+        assertEquals("aB3dE7fG9h", account.rawPassword());
         assertTrue(user.isActive());
+    }
+
+    @Test
+    void newUser_storesOnlyTheBcryptHash_neverThePlainPassword() {
+        when(usernameGenerator.generate("John", "Doe")).thenReturn("John.Doe");
+        when(passwordGenerator.generate()).thenReturn("aB3dE7fG9h");
+
+        UserAccountService.NewAccount account = service.newUser("John", "Doe");
+
+        assertNotEquals("aB3dE7fG9h", account.user().getPassword());
+        assertTrue(account.user().getPassword().startsWith("$2a$"));
+        assertTrue(passwordEncoder.matches("aB3dE7fG9h", account.user().getPassword()));
+        assertFalse(account.toString().contains("aB3dE7fG9h"));
     }
 
     @Test
@@ -64,7 +91,7 @@ class UserAccountServiceTest {
         when(usernameGenerator.generate(" Anna ", " Lee ")).thenReturn("Anna.Lee");
         when(passwordGenerator.generate()).thenReturn("pass123456");
 
-        User user = service.newUser(" Anna ", " Lee ");
+        User user = service.newUser(" Anna ", " Lee ").user();
 
         assertEquals("Anna", user.getFirstName());
         assertEquals("Lee", user.getLastName());
@@ -88,8 +115,32 @@ class UserAccountServiceTest {
 
         service.changePassword(user, "brandNewPass");
 
-        assertEquals("brandNewPass", user.getPassword());
+        assertTrue(passwordEncoder.matches("brandNewPass", user.getPassword()));
+        assertNotEquals("brandNewPass", user.getPassword());
         verify(userDao).update(user);
+    }
+
+    @Test
+    void changePasswordWithOldPassword_authenticatesThenStoresNewHash() {
+        User user = User.builder().username("John.Doe").password("old-hash").build();
+        when(authenticationService.authenticate("John.Doe", "oldPass")).thenReturn(user);
+
+        service.changePassword("John.Doe", "oldPass", "brandNewPass");
+
+        assertTrue(passwordEncoder.matches("brandNewPass", user.getPassword()));
+        verify(userDao).update(user);
+    }
+
+    @Test
+    void changePasswordWithWrongOldPassword_throwsAndDoesNotUpdate() {
+        AuthenticationException failure = new AuthenticationException("Invalid username or password");
+        when(authenticationService.authenticate("John.Doe", "wrong")).thenThrow(failure);
+
+        AuthenticationException thrown = assertThrows(AuthenticationException.class,
+                () -> service.changePassword("John.Doe", "wrong", "brandNewPass"));
+
+        assertSame(failure, thrown);
+        verifyNoInteractions(userDao);
     }
 
     @Test

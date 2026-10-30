@@ -8,9 +8,10 @@ import com.epam.training.gym.dto.requests.UpdateTrainerProfileRequest;
 import com.epam.training.gym.dto.responses.RegistrationResponse;
 import com.epam.training.gym.dto.responses.TrainerProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTrainerProfileResponse;
-import com.epam.training.gym.exception.AuthenticationException;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainer;
+import com.epam.training.gym.service.GeneratedCredentials;
+import com.epam.training.gym.service.TrainerService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.util.BasicAuthUtil;
 import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,10 +40,12 @@ import java.util.List;
 @Tag(name = "Trainer", description = "Trainer registration, profile and trainings")
 public class TrainerController {
 
-    private final GymFacade facade;
+    private final TrainerService trainerService;
+    private final TrainingService trainingService;
 
-    public TrainerController(GymFacade facade) {
-        this.facade = facade;
+    public TrainerController(TrainerService trainerService, TrainingService trainingService) {
+        this.trainerService = trainerService;
+        this.trainingService = trainingService;
     }
 
     @PostMapping
@@ -50,9 +53,9 @@ public class TrainerController {
     @ApiResponse(responseCode = "201", description = "Trainer created")
     @ApiResponse(responseCode = "400", description = "Validation error, or unknown specialization")
     public ResponseEntity<RegistrationResponse> register(@RequestBody TrainerRegistrationRequest request) {
-        Trainer trainer = facade.createTrainer(request.firstName(), request.lastName(), request.specialization());
-        RegistrationResponse response = new RegistrationResponse(
-                trainer.getUser().getUsername(), trainer.getUser().getPassword());
+        GeneratedCredentials credentials = trainerService.createTrainer(
+                request.firstName(), request.lastName(), request.specialization());
+        RegistrationResponse response = new RegistrationResponse(credentials.username(), credentials.password());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -62,8 +65,8 @@ public class TrainerController {
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<TrainerProfileResponse> getProfile(
             @PathVariable String username, HttpServletRequest request) {
-        String password = authenticate(username, request);
-        Trainer trainer = facade.getTrainer(username, password);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        Trainer trainer = trainerService.getByUsername(username, password);
         return ResponseEntity.ok(DtoMapper.toTrainerProfileResponse(trainer));
     }
 
@@ -73,9 +76,9 @@ public class TrainerController {
     @ApiResponse(responseCode = "400", description = "Validation error")
     public ResponseEntity<UpdateTrainerProfileResponse> updateProfile(
             @PathVariable String username, @RequestBody UpdateTrainerProfileRequest body, HttpServletRequest request) {
-        String password = authenticate(username, request, body.username());
+        String password = BasicAuthUtil.extractFor(request, username, body.username()).password();
         Validation.requireNotNull(body.isActive(), "Is Active");
-        Trainer trainer = facade.updateTrainerProfile(username, password, body.firstName(), body.lastName(),
+        Trainer trainer = trainerService.updateFullProfile(username, password, body.firstName(), body.lastName(),
                 body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTrainerProfileResponse(trainer));
     }
@@ -89,8 +92,8 @@ public class TrainerController {
             @Parameter(description = "Period end (inclusive)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @Parameter(description = "Part of the trainee's name") @RequestParam(required = false) String traineeName,
             HttpServletRequest request) {
-        String password = authenticate(username, request);
-        var trainings = facade.getTrainerTrainings(username, password, periodFrom, periodTo, traineeName);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        var trainings = trainingService.getTrainerTrainings(username, password, periodFrom, periodTo, traineeName);
         return ResponseEntity.ok(DtoMapper.toTrainerTrainingDtoList(trainings));
     }
 
@@ -100,28 +103,9 @@ public class TrainerController {
     @ApiResponse(responseCode = "200", description = "Status updated")
     public ResponseEntity<Void> setActive(
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
-        String password = authenticate(username, request, body.username());
+        String password = BasicAuthUtil.extractFor(request, username, body.username()).password();
         Validation.requireNotNull(body.isActive(), "Is Active");
-        facade.setTrainerActive(username, password, body.isActive());
+        trainerService.setActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
-    }
-
-    // ---------- Basic Auth helpers ----------
-
-    private String authenticate(String pathUsername, HttpServletRequest request) {
-        BasicAuthUtil.Credentials credentials = BasicAuthUtil.extract(request);
-        requireSameUser(pathUsername, credentials.username());
-        return credentials.password();
-    }
-
-    private String authenticate(String pathUsername, HttpServletRequest request, String bodyUsername) {
-        requireSameUser(pathUsername, bodyUsername);
-        return authenticate(pathUsername, request);
-    }
-
-    private void requireSameUser(String pathUsername, String otherUsername) {
-        if (otherUsername != null && !pathUsername.equals(otherUsername)) {
-            throw new AuthenticationException("Username in the request does not match the URL");
-        }
     }
 }

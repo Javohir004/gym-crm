@@ -10,11 +10,10 @@ import com.epam.training.gym.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Optional;
 
 
@@ -27,6 +26,7 @@ public class AuthenticationService {
     private UserDao userDao;
     private TraineeDao traineeDao;
     private TrainerDao trainerDao;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setUserDao(UserDao userDao) {
@@ -41,6 +41,11 @@ public class AuthenticationService {
     @Autowired
     public void setTrainerDao(TrainerDao trainerDao) {
         this.trainerDao = trainerDao;
+    }
+
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User authenticate(String username, String password) {
@@ -91,9 +96,7 @@ public class AuthenticationService {
     }
 
     private boolean passwordMatches(User user, String password) {
-        return MessageDigest.isEqual(
-                user.getPassword().getBytes(StandardCharsets.UTF_8),
-                password.getBytes(StandardCharsets.UTF_8));
+        return passwordEncoder.matches(password, user.getPassword());
     }
 
     private AuthenticationException failed(String username) {

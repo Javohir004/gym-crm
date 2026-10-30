@@ -13,6 +13,27 @@ public final class BasicAuthUtil {
     }
 
     public record Credentials(String username, String password) {
+
+        @Override
+        public String toString() {
+            return "Credentials[username=" + username + "]";
+        }
+    }
+
+    /** Credentials from the header, which must belong to the user named in the URL (and in the body, if any). */
+    public static Credentials extractFor(HttpServletRequest request, String pathUsername, String... bodyUsernames) {
+        for (String bodyUsername : bodyUsernames) {
+            requireSameUser(pathUsername, bodyUsername);
+        }
+        Credentials credentials = extract(request);
+        requireSameUser(pathUsername, credentials.username());
+        return credentials;
+    }
+
+    private static void requireSameUser(String pathUsername, String otherUsername) {
+        if (otherUsername != null && !pathUsername.equals(otherUsername)) {
+            throw new AuthenticationException("Username in the request does not match the URL");
+        }
     }
 
     public static Credentials extract(HttpServletRequest request) {

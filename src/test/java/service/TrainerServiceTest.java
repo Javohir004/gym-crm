@@ -11,6 +11,7 @@ import com.epam.training.gym.model.TrainingType;
 import com.epam.training.gym.model.User;
 import com.epam.training.gym.service.AuthenticationService;
 import com.epam.training.gym.service.TrainerService;
+import com.epam.training.gym.service.GeneratedCredentials;
 import com.epam.training.gym.service.UserAccountService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,25 +73,28 @@ class TrainerServiceTest {
     @Test
     void createTrainer_savesTrainerWithSpecializationAndGeneratedUser() {
         when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
-        when(userAccountService.newUser("Anna", "Lee")).thenReturn(user);
+        when(userAccountService.newUser("Anna", "Lee")).thenReturn(new UserAccountService.NewAccount(user, PASSWORD));
 
-        Trainer result = service.createTrainer("Anna", "Lee", "Yoga");
+        GeneratedCredentials result = service.createTrainer("Anna", "Lee", "Yoga");
 
         ArgumentCaptor<Trainer> captor = ArgumentCaptor.forClass(Trainer.class);
         verify(trainerDao).save(captor.capture());
         assertSame(user, captor.getValue().getUser());
         assertSame(yoga, captor.getValue().getSpecialization());
-        assertSame(captor.getValue(), result);
+        assertEquals(USERNAME, result.username());
+        assertEquals(PASSWORD, result.password());
     }
 
     @Test
     void createTrainer_trimsSpecializationName() {
         when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
-        when(userAccountService.newUser("Anna", "Lee")).thenReturn(user);
+        when(userAccountService.newUser("Anna", "Lee")).thenReturn(new UserAccountService.NewAccount(user, PASSWORD));
 
-        Trainer result = service.createTrainer("Anna", "Lee", "  Yoga ");
+        service.createTrainer("Anna", "Lee", "  Yoga ");
 
-        assertSame(yoga, result.getSpecialization());
+        ArgumentCaptor<Trainer> captor = ArgumentCaptor.forClass(Trainer.class);
+        verify(trainerDao).save(captor.capture());
+        assertSame(yoga, captor.getValue().getSpecialization());
     }
 
     @Test
@@ -114,7 +118,7 @@ class TrainerServiceTest {
     @Test
     void createTrainer_logsCreation_withoutLeakingPassword() {
         when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
-        when(userAccountService.newUser("Anna", "Lee")).thenReturn(user);
+        when(userAccountService.newUser("Anna", "Lee")).thenReturn(new UserAccountService.NewAccount(user, PASSWORD));
 
         try (LogCapture logs = new LogCapture(TrainerService.class)) {
             service.createTrainer("Anna", "Lee", "Yoga");

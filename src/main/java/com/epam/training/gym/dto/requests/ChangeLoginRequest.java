@@ -13,4 +13,9 @@ public record ChangeLoginRequest(
 
         @Schema(description = "New password", requiredMode = Schema.RequiredMode.REQUIRED)
         String newPassword) {
+
+    @Override
+    public String toString() {
+        return "ChangeLoginRequest[username=" + username + "]";
+    }
 }

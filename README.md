@@ -25,7 +25,6 @@ src/main/java/com/epam/training/gym/
   model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
   dao/         EntityManager-based DAOs
   service/     Business logic, authentication, validation, @Transactional
-  facade/      GymFacade - one method per required function
   controller/  @RestController classes - the 17 REST endpoints
   dto/
     requests/  Request bodies
@@ -105,7 +104,7 @@ Notes:
 
 | Table | Notes |
 |---|---|
-| `users` | first/last name, unique username, password, is_active |
+| `users` | first/last name, unique username, password (**BCrypt hash**, never plain text), is_active |
 | `trainee` | date of birth, address, `user_id` (FK, one-to-one with `users`) |
 | `trainer` | `specialization_id` (FK to `training_type`), `user_id` (FK, one-to-one) |
 | `training` | FKs to trainee, trainer and training type; name, date, duration |
@@ -187,10 +186,12 @@ the custom metrics). Run it with the Collection Runner.
 
 ### Authentication
 
-Every endpoint except registration (1, 2), login (3, 4) and "Get Training
-types" (17) requires **HTTP Basic Auth**
-(`Authorization: Basic base64(username:password)`). The username in the
-path must be the authenticated user, otherwise the call is rejected with 401.
+Every endpoint except registration (1, 2) and Change Login (4, which checks
+the old password from its body) requires **HTTP Basic Auth**
+(`Authorization: Basic base64(username:password)`), Login (3) included:
+credentials are never sent as URL query parameters, so they do not end up in
+access logs, proxies or browser history. The username in the path must be the
+authenticated user, otherwise the call is rejected with 401.
 Actuator and Swagger endpoints are not behind this check.
 
 ### Endpoints
@@ -199,7 +200,7 @@ Actuator and Swagger endpoints are not behind this check.
 |---|---|---|
 | 1 | Trainee Registration | `POST /trainees` |
 | 2 | Trainer Registration | `POST /trainers` |
-| 3 | Login | `GET /login?username=&password=` |
+| 3 | Login | `GET /login` (Basic Auth header) |
 | 4 | Change Login | `PUT /login` |
 | 5 | Get Trainee Profile | `GET /trainees/{username}` |
 | 6 | Update Trainee Profile | `PUT /trainees/{username}` |
@@ -219,6 +220,11 @@ Actuator and Swagger endpoints are not behind this check.
 
 - **Username / password:** `firstName.lastName`, a serial number added if the
   name is taken (`John.Doe1`). Password: random 10 characters (`SecureRandom`).
+- **Passwords are stored as BCrypt hashes** (`spring-security-crypto`, no
+  Spring Security filter chain). The plain generated password exists only in
+  the registration response; login compares with `PasswordEncoder.matches`.
+- **No facade layer:** controllers call the services directly; the services
+  own authentication, validation and transactions.
 - **Add Training (14) has no Training Type field.** The training's type is
   taken from the **trainer's own specialization**.
 - **Update Trainer Profile (9): specialization is read-only.** The request may
@@ -233,9 +239,11 @@ Actuator and Swagger endpoints are not behind this check.
   username/password. Get Training types (17) accepts any trainee or trainer.
 - **Error handling:** every exception maps to the same JSON shape
   (`message`, `status`, `transactionId`) via one `@RestControllerAdvice`:
-  400 (validation), 401 (auth), 404 (not found, including unknown URLs),
-  405 (wrong HTTP method), 409 (conflict), 500 (anything else, logged
-  server-side only, never leaked to the client).
+  400 (validation, missing/invalid parameter, malformed JSON), 401 (auth),
+  404 (not found, including unknown URLs), 405 (wrong HTTP method),
+  409 (conflict), 415 (unsupported content type), 500 (anything else, logged
+  server-side only, never leaked to the client). Spring MVC's own exceptions
+  get their status from `ResponseEntityExceptionHandler`.
 - **Logging:** `TransactionIdFilter` gives every request a UUID, carried
   through every log line of that request (the `[txId=...]` part of the log
   pattern) and returned as the `X-Transaction-Id` response header.

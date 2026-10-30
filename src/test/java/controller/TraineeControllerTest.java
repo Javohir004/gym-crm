@@ -2,7 +2,9 @@ package controller;
 
 import com.epam.training.gym.controller.TraineeController;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.GeneratedCredentials;
+import com.epam.training.gym.service.TraineeService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
@@ -41,7 +43,10 @@ class TraineeControllerTest {
     private static final String AUTH_HEADER = BasicAuthHeader.value(USERNAME, PASSWORD);
 
     @Mock
-    private GymFacade facade;
+    private TraineeService traineeService;
+
+    @Mock
+    private TrainingService trainingService;
 
     private MockMvc mockMvc;
 
@@ -50,7 +55,7 @@ class TraineeControllerTest {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
 
-        mockMvc = MockMvcBuilders.standaloneSetup(new TraineeController(facade))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TraineeController(traineeService, trainingService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
                 .build();
@@ -65,8 +70,8 @@ class TraineeControllerTest {
 
     @Test
     void register_returns201WithGeneratedCredentials() throws Exception {
-        Trainee created = trainee(true);
-        when(facade.createTrainee("John", "Doe", LocalDate.of(2000, 1, 15), "Tashkent")).thenReturn(created);
+        when(traineeService.createTrainee("John", "Doe", LocalDate.of(2000, 1, 15), "Tashkent"))
+                .thenReturn(new GeneratedCredentials(USERNAME, PASSWORD));
 
         String body = """
                 {"firstName":"John","lastName":"Doe","dateOfBirth":"2000-01-15","address":"Tashkent"}
@@ -86,7 +91,7 @@ class TraineeControllerTest {
 
         Trainee trainee = trainee(true);
         trainee.setTrainers(Set.of(trainer));
-        when(facade.getTrainee(USERNAME, PASSWORD)).thenReturn(trainee);
+        when(traineeService.getByUsername(USERNAME, PASSWORD)).thenReturn(trainee);
 
         mockMvc.perform(get("/api/trainees/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
@@ -105,7 +110,7 @@ class TraineeControllerTest {
     @Test
     void updateProfile_returns200_andPassesIsActiveThrough() throws Exception {
         Trainee updated = trainee(false);
-        when(facade.updateTraineeProfile(USERNAME, PASSWORD, "John", "Doe",
+        when(traineeService.updateFullProfile(USERNAME, PASSWORD, "John", "Doe",
                 LocalDate.of(2000, 1, 15), "Yunusobod", false)).thenReturn(updated);
 
         String body = """
@@ -152,7 +157,7 @@ class TraineeControllerTest {
         TrainingType fitness = TrainingType.builder().trainingTypeName("Fitness").build();
         User trainerUser = User.builder().firstName("Mark").lastName("King").username("Mark.King").build();
         Trainer trainer = Trainer.builder().user(trainerUser).specialization(fitness).build();
-        when(facade.getUnassignedActiveTrainers(USERNAME, PASSWORD)).thenReturn(List.of(trainer));
+        when(traineeService.getUnassignedActiveTrainers(USERNAME, PASSWORD)).thenReturn(List.of(trainer));
 
         mockMvc.perform(get("/api/trainees/" + USERNAME + "/unassigned-trainers")
                         .header("Authorization", AUTH_HEADER))
@@ -168,7 +173,7 @@ class TraineeControllerTest {
 
         Trainee updated = trainee(true);
         updated.setTrainers(Set.of(trainer));
-        when(facade.updateTraineeTrainers(USERNAME, PASSWORD, List.of("Anna.Lee"))).thenReturn(updated);
+        when(traineeService.updateTrainers(USERNAME, PASSWORD, List.of("Anna.Lee"))).thenReturn(updated);
 
         String body = """
                 {"traineeUsername":"John.Doe","trainers":["Anna.Lee"]}
@@ -187,7 +192,7 @@ class TraineeControllerTest {
                 .trainingType(TrainingType.builder().trainingTypeName("Yoga").build())
                 .trainer(Trainer.builder().user(User.builder().firstName("Anna").lastName("Lee").build()).build())
                 .build();
-        when(facade.getTraineeTrainings(USERNAME, PASSWORD, null, null, "anna", null))
+        when(trainingService.getTraineeTrainings(USERNAME, PASSWORD, null, null, "anna", null))
                 .thenReturn(List.of(training));
 
         mockMvc.perform(get("/api/trainees/" + USERNAME + "/trainings")
@@ -211,7 +216,7 @@ class TraineeControllerTest {
     @Test
     void setActive_returns409_whenAlreadyInThatState() throws Exception {
         org.mockito.Mockito.doThrow(new com.epam.training.gym.exception.ConflictException("User is already inactive"))
-                .when(facade).setTraineeActive(USERNAME, PASSWORD, false);
+                .when(traineeService).setActive(USERNAME, PASSWORD, false);
 
         String body = """
                 {"username":"John.Doe","isActive":false}

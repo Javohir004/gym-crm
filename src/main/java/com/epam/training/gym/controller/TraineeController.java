@@ -12,9 +12,10 @@ import com.epam.training.gym.dto.responses.RegistrationResponse;
 import com.epam.training.gym.dto.responses.TraineeProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTraineeProfileResponse;
 import com.epam.training.gym.dto.responses.UpdateTraineeTrainersResponse;
-import com.epam.training.gym.exception.AuthenticationException;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.Trainee;
+import com.epam.training.gym.service.GeneratedCredentials;
+import com.epam.training.gym.service.TraineeService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.util.BasicAuthUtil;
 import com.epam.training.gym.util.Validation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,10 +45,12 @@ import java.time.LocalDate;
 @Tag(name = "Trainee", description = "Trainee registration, profile, trainers list and trainings")
 public class TraineeController {
 
-    private final GymFacade facade;
+    private final TraineeService traineeService;
+    private final TrainingService trainingService;
 
-    public TraineeController(GymFacade facade) {
-        this.facade = facade;
+    public TraineeController(TraineeService traineeService, TrainingService trainingService) {
+        this.traineeService = traineeService;
+        this.trainingService = trainingService;
     }
 
 
@@ -56,10 +59,9 @@ public class TraineeController {
     @ApiResponse(responseCode = "201", description = "Trainee created")
     @ApiResponse(responseCode = "400", description = "Validation error")
     public ResponseEntity<RegistrationResponse> register(@RequestBody TraineeRegistrationRequest request) {
-        Trainee trainee = facade.createTrainee(request.firstName(), request.lastName(),
+        GeneratedCredentials credentials = traineeService.createTrainee(request.firstName(), request.lastName(),
                 request.dateOfBirth(), request.address());
-        RegistrationResponse response = new RegistrationResponse(
-                trainee.getUser().getUsername(), trainee.getUser().getPassword());
+        RegistrationResponse response = new RegistrationResponse(credentials.username(), credentials.password());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -69,8 +71,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<TraineeProfileResponse> getProfile(
             @PathVariable String username, HttpServletRequest request) {
-        String password = authenticate(username, request);
-        Trainee trainee = facade.getTrainee(username, password);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        Trainee trainee = traineeService.getByUsername(username, password);
         return ResponseEntity.ok(DtoMapper.toTraineeProfileResponse(trainee));
     }
 
@@ -81,9 +83,9 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<UpdateTraineeProfileResponse> updateProfile(
             @PathVariable String username, @RequestBody UpdateTraineeProfileRequest body, HttpServletRequest request) {
-        String password = authenticate(username, request, body.username());
+        String password = BasicAuthUtil.extractFor(request, username, body.username()).password();
         Validation.requireNotNull(body.isActive(), "Is Active");
-        Trainee trainee = facade.updateTraineeProfile(username, password, body.firstName(), body.lastName(),
+        Trainee trainee = traineeService.updateFullProfile(username, password, body.firstName(), body.lastName(),
                 body.dateOfBirth(), body.address(), body.isActive());
         return ResponseEntity.ok(DtoMapper.toUpdateTraineeProfileResponse(trainee));
     }
@@ -93,8 +95,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "Deleted")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<Void> delete(@PathVariable String username, HttpServletRequest request) {
-        String password = authenticate(username, request);
-        facade.deleteTrainee(username, password);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        traineeService.delete(username, password);
         return ResponseEntity.ok().build();
     }
 
@@ -103,8 +105,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "List returned")
     public ResponseEntity<java.util.List<TrainerShortDto>> getUnassignedActiveTrainers(
             @PathVariable String username, HttpServletRequest request) {
-        String password = authenticate(username, request);
-        var trainers = facade.getUnassignedActiveTrainers(username, password);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        var trainers = traineeService.getUnassignedActiveTrainers(username, password);
         return ResponseEntity.ok(DtoMapper.toTrainerShortDtoList(trainers));
     }
 
@@ -114,8 +116,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "404", description = "One of the given trainer usernames does not exist")
     public ResponseEntity<UpdateTraineeTrainersResponse> updateTrainers(
             @PathVariable String username, @RequestBody UpdateTraineeTrainersRequest body, HttpServletRequest request) {
-        String password = authenticate(username, request, body.traineeUsername());
-        Trainee trainee = facade.updateTraineeTrainers(username, password, body.trainers());
+        String password = BasicAuthUtil.extractFor(request, username, body.traineeUsername()).password();
+        Trainee trainee = traineeService.updateTrainers(username, password, body.trainers());
         return ResponseEntity.ok(new UpdateTraineeTrainersResponse(DtoMapper.toTrainerShortDtoList(trainee.getTrainers())));
     }
 
@@ -129,8 +131,8 @@ public class TraineeController {
             @Parameter(description = "Part of the trainer's name") @RequestParam(required = false) String trainerName,
             @Parameter(description = "Training type name") @RequestParam(required = false) String trainingType,
             HttpServletRequest request) {
-        String password = authenticate(username, request);
-        var trainings = facade.getTraineeTrainings(username, password, periodFrom, periodTo, trainerName, trainingType);
+        String password = BasicAuthUtil.extractFor(request, username).password();
+        var trainings = trainingService.getTraineeTrainings(username, password, periodFrom, periodTo, trainerName, trainingType);
         return ResponseEntity.ok(DtoMapper.toTraineeTrainingDtoList(trainings));
     }
 
@@ -139,32 +141,9 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "Status updated")
     public ResponseEntity<Void> setActive(
             @PathVariable String username, @RequestBody ActivateRequest body, HttpServletRequest request) {
-        String password = authenticate(username, request, body.username());
+        String password = BasicAuthUtil.extractFor(request, username, body.username()).password();
         Validation.requireNotNull(body.isActive(), "Is Active");
-        facade.setTraineeActive(username, password, body.isActive());
+        traineeService.setActive(username, password, body.isActive());
         return ResponseEntity.ok().build();
-    }
-
-    // ---------- Basic Auth helpers ----------
-
-    private String authenticate(String pathUsername, HttpServletRequest request) {
-        BasicAuthUtil.Credentials credentials = credentials(request);
-        requireSameUser(pathUsername, credentials.username());
-        return credentials.password();
-    }
-
-    private String authenticate(String pathUsername, HttpServletRequest request, String bodyUsername) {
-        requireSameUser(pathUsername, bodyUsername);
-        return authenticate(pathUsername, request);
-    }
-
-    private BasicAuthUtil.Credentials credentials(HttpServletRequest request) {
-        return BasicAuthUtil.extract(request);
-    }
-
-    private void requireSameUser(String pathUsername, String otherUsername) {
-        if (otherUsername != null && !pathUsername.equals(otherUsername)) {
-            throw new AuthenticationException("Username in the request does not match the URL");
-        }
     }
 }

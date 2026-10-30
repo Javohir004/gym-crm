@@ -3,8 +3,9 @@ package controller;
 import com.epam.training.gym.controller.TrainingTypeController;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
-import com.epam.training.gym.facade.GymFacade;
 import com.epam.training.gym.model.TrainingType;
+import com.epam.training.gym.service.AuthenticationService;
+import com.epam.training.gym.service.TrainingTypeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,20 +31,23 @@ class TrainingTypeControllerTest {
     private static final String PASS = "secret1234";
 
     @Mock
-    private GymFacade facade;
+    private AuthenticationService authenticationService;
+
+    @Mock
+    private TrainingTypeService trainingTypeService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingTypeController(facade))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TrainingTypeController(authenticationService, trainingTypeService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
     @Test
     void getAll_withValidCredentials_returns200WithList() throws Exception {
-        when(facade.getTrainingTypes(USER, PASS)).thenReturn(List.of(
+        when(trainingTypeService.getAll()).thenReturn(List.of(
                 TrainingType.builder().id(1L).trainingTypeName("Fitness").build(),
                 TrainingType.builder().id(2L).trainingTypeName("Yoga").build()));
 
@@ -60,16 +64,18 @@ class TrainingTypeControllerTest {
         mockMvc.perform(get("/api/training-types"))
                 .andExpect(status().isUnauthorized());
 
-        verifyNoInteractions(facade);
+        verifyNoInteractions(authenticationService, trainingTypeService);
     }
 
     @Test
     void getAll_withWrongPassword_returns401() throws Exception {
-        when(facade.getTrainingTypes(USER, "wrong"))
+        when(authenticationService.authenticate(USER, "wrong"))
                 .thenThrow(new AuthenticationException("Invalid username or password"));
 
         mockMvc.perform(get("/api/training-types")
                         .header(HttpHeaders.AUTHORIZATION, BasicAuthHeader.value(USER, "wrong")))
                 .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(trainingTypeService);
     }
 }

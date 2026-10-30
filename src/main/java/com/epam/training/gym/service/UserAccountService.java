@@ -7,6 +7,7 @@ import com.epam.training.gym.util.Validation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,17 @@ public class UserAccountService {
     private UserDao userDao;
     private UsernameGenerator usernameGenerator;
     private PasswordGenerator passwordGenerator;
+    private PasswordEncoder passwordEncoder;
+    private AuthenticationService authenticationService;
+
+    /** A new, not yet saved user (password stored as a hash) plus the plain password to hand out once. */
+    public record NewAccount(User user, String rawPassword) {
+
+        @Override
+        public String toString() {
+            return "NewAccount[username=" + user.getUsername() + "]";
+        }
+    }
 
     @Autowired
     public void setUserDao(UserDao userDao) {
@@ -36,22 +48,39 @@ public class UserAccountService {
         this.passwordGenerator = passwordGenerator;
     }
 
-    public User newUser(String firstName, String lastName) {
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Autowired
+    public void setAuthenticationService(AuthenticationService authenticationService) {
+        this.authenticationService = authenticationService;
+    }
+
+    public NewAccount newUser(String firstName, String lastName) {
         Validation.requireText(firstName, "First name");
         Validation.requireText(lastName, "Last name");
 
-        return User.builder()
+        String rawPassword = passwordGenerator.generate();
+        User user = User.builder()
                 .firstName(firstName.trim())
                 .lastName(lastName.trim())
                 .username(usernameGenerator.generate(firstName, lastName))
-                .password(passwordGenerator.generate())
+                .password(passwordEncoder.encode(rawPassword))
                 .active(true)
                 .build();
+        return new NewAccount(user, rawPassword);
+    }
+
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        User user = authenticationService.authenticate(username, oldPassword);
+        changePassword(user, newPassword);
     }
 
     public void changePassword(User user, String newPassword) {
         Validation.requireText(newPassword, "New password");
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         userDao.update(user);
         log.info("Password changed for username={}", user.getUsername());
     }

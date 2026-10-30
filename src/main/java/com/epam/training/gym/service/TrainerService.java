@@ -45,18 +45,19 @@ public class TrainerService {
         this.userAccountService = userAccountService;
     }
 
-    public Trainer createTrainer(String firstName, String lastName, String specializationName) {
+    public GeneratedCredentials createTrainer(String firstName, String lastName, String specializationName) {
         Validation.requireText(specializationName, "Specialization");
         TrainingType specialization = findTrainingType(specializationName);
 
-        User user = userAccountService.newUser(firstName, lastName);
+        UserAccountService.NewAccount account = userAccountService.newUser(firstName, lastName);
+        User user = account.user();
         Trainer trainer = Trainer.builder()
                 .user(user)
                 .specialization(specialization)
                 .build();
         trainerDao.save(trainer);
         log.info("Trainer profile created: username={}", user.getUsername());
-        return trainer;
+        return new GeneratedCredentials(user.getUsername(), account.rawPassword());
     }
 
     @Transactional(readOnly = true)

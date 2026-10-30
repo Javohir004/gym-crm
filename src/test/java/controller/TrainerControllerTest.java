@@ -2,7 +2,9 @@ package controller;
 
 import com.epam.training.gym.controller.TrainerController;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
-import com.epam.training.gym.facade.GymFacade;
+import com.epam.training.gym.service.GeneratedCredentials;
+import com.epam.training.gym.service.TrainerService;
+import com.epam.training.gym.service.TrainingService;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
@@ -37,13 +39,16 @@ class TrainerControllerTest {
     private static final String AUTH_HEADER = BasicAuthHeader.value(USERNAME, PASSWORD);
 
     @Mock
-    private GymFacade facade;
+    private TrainerService trainerService;
+
+    @Mock
+    private TrainingService trainingService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new TrainerController(facade))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TrainerController(trainerService, trainingService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -56,8 +61,8 @@ class TrainerControllerTest {
 
     @Test
     void register_returns201WithGeneratedCredentials() throws Exception {
-        when(facade.createTrainer("Anna", "Lee", "Yoga"))
-                .thenReturn(trainer(true, TrainingType.builder().trainingTypeName("Yoga").build()));
+        when(trainerService.createTrainer("Anna", "Lee", "Yoga"))
+                .thenReturn(new GeneratedCredentials(USERNAME, PASSWORD));
 
         String body = """
                 {"firstName":"Anna","lastName":"Lee","specialization":"Yoga"}
@@ -75,7 +80,7 @@ class TrainerControllerTest {
         Trainer trainer = trainer(true, yoga);
         User traineeUser = User.builder().firstName("John").lastName("Doe").username("John.Doe").build();
         trainer.setTrainees(Set.of(Trainee.builder().user(traineeUser).build()));
-        when(facade.getTrainer(USERNAME, PASSWORD)).thenReturn(trainer);
+        when(trainerService.getByUsername(USERNAME, PASSWORD)).thenReturn(trainer);
 
         mockMvc.perform(get("/api/trainers/" + USERNAME).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
@@ -86,7 +91,7 @@ class TrainerControllerTest {
     @Test
     void updateProfile_returns200_andSpecializationStaysWhatServiceReturns() throws Exception {
         TrainingType yoga = TrainingType.builder().trainingTypeName("Yoga").build();
-        when(facade.updateTrainerProfile(USERNAME, PASSWORD, "Anna", "Lee", true))
+        when(trainerService.updateFullProfile(USERNAME, PASSWORD, "Anna", "Lee", true))
                 .thenReturn(trainer(true, yoga));
 
         // Even though the request carries "Fitness", the controller must not pass it to the
@@ -119,7 +124,7 @@ class TrainerControllerTest {
                 .trainingType(TrainingType.builder().trainingTypeName("Yoga").build())
                 .trainee(Trainee.builder().user(User.builder().firstName("John").lastName("Doe").build()).build())
                 .build();
-        when(facade.getTrainerTrainings(USERNAME, PASSWORD, null, null, null)).thenReturn(List.of(training));
+        when(trainingService.getTrainerTrainings(USERNAME, PASSWORD, null, null, null)).thenReturn(List.of(training));
 
         mockMvc.perform(get("/api/trainers/" + USERNAME + "/trainings").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())

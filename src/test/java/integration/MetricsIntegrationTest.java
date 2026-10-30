@@ -69,7 +69,9 @@ class MetricsIntegrationTest {
     void wrongPasswordLogin_returns401_andCountsTheFailure() throws Exception {
         double before = count("gym.authentication.failures");
 
-        mockMvc.perform(get("/api/login").param("username", "No.Body").param("password", "wrong"))
+        String basic = "Basic " + Base64.getEncoder().encodeToString("No.Body:wrong".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/login").header("Authorization", basic))
                 .andExpect(status().isUnauthorized());
 
         assertEquals(before + 1, count("gym.authentication.failures"));
