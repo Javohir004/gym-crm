@@ -1,0 +1,43 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: gym-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - gym-pgdata:/var/lib/postgresql/data
+    networks:
+      - gym-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  gym-crm:
+    build: .
+    image: gym-crm:latest
+    container_name: gym-crm-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres          # <-- compose service nomi (localhost EMAS)
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8081:8081"
+    networks:
+      - gym-net
+
+networks:
+  gym-net:
+
+volumes:
+  gym-pgdata:

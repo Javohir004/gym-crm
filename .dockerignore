@@ -1,0 +1,20 @@
+# build natijalari
+target/
+# git va IDE
+.git
+.gitignore
+.idea/
+.vscode/
+*.iml
+# lokal ma'lumotlar va loglar
+data/
+logs/
+# secret'lar image'ga tushmasin
+.env
+# keraksiz fayllar
+postman/
+README.md
+DOCKER.md
+Dockerfile
+docker-compose.yml
+HELP.md
