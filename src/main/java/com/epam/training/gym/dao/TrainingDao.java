@@ -31,7 +31,6 @@ public class TrainingDao {
         return training;
     }
 
-
     public List<Training> findByTraineeUsername(String traineeUsername, LocalDate fromDate, LocalDate toDate,
                                                 String trainerName, String trainingTypeName) {
         StringBuilder jpql = new StringBuilder("select t from Training t where t.trainee.user.username = :username");

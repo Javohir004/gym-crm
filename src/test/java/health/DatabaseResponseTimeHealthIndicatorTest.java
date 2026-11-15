@@ -45,7 +45,6 @@ class DatabaseResponseTimeHealthIndicatorTest {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.isValid(2)).thenReturn(true);
 
-        // threshold -1 ms: any measured time is "slow"
         Health health = new DatabaseResponseTimeHealthIndicator(dataSource, -1).health();
 
         assertEquals(Status.OUT_OF_SERVICE, health.getStatus());

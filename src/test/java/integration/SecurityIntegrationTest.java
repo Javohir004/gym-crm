@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 @SpringBootTest(classes = GymCrmApplication.class,
         properties = "spring.datasource.url=jdbc:h2:mem:security-test;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
@@ -67,8 +66,6 @@ class SecurityIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(json, "$.token");
     }
-
-    // ---------- who needs a token ----------
 
     @Test
     void protectedEndpoints_return401_withoutToken() throws Exception {
@@ -128,8 +125,6 @@ class SecurityIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ---------- password storage ----------
-
     @Test
     void password_isStoredAsSaltedBcryptHash() throws Exception {
         Account trainee = registerTrainee();
@@ -140,8 +135,6 @@ class SecurityIntegrationTest {
         assertNotEquals(trainee.password(), stored);
         assertTrue(stored.startsWith("$2"), "expected a BCrypt hash but was: " + stored.substring(0, 4));
     }
-
-    // ---------- login ----------
 
     @Test
     void login_returnsWorkingToken_forCorrectPassword() throws Exception {
@@ -182,8 +175,6 @@ class SecurityIntegrationTest {
         login(trainee.username(), "NewSecret12345");
     }
 
-    // ---------- brute force ----------
-
     @Test
     void threeWrongPasswords_blockTheUser_evenForTheCorrectPassword() throws Exception {
         Account trainee = registerTrainee();
@@ -214,8 +205,6 @@ class SecurityIntegrationTest {
         }
     }
 
-    // ---------- logout ----------
-
     @Test
     void logout_makesTheTokenUnusable() throws Exception {
         Account trainee = registerTrainee();
@@ -227,12 +216,9 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get("/api/training-types").header("Authorization", bearer))
                 .andExpect(status().isUnauthorized());
-        // other tokens of the same user are not affected
         mockMvc.perform(get("/api/training-types").header("Authorization", trainee.bearer()))
                 .andExpect(status().isOk());
     }
-
-    // ---------- CORS ----------
 
     @Test
     void cors_preflightFromAllowedOrigin_isAccepted() throws Exception {

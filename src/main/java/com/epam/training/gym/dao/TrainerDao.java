@@ -23,7 +23,6 @@ public class TrainerDao {
         this.entityManager = entityManager;
     }
 
-
     public Trainer save(Trainer trainer) {
         entityManager.persist(trainer);
         log.info("Saved trainer id={} username={}", trainer.getId(), trainer.getUser().getUsername());
@@ -62,7 +61,6 @@ public class TrainerDao {
                 .setParameter("username", traineeUsername)
                 .getResultList();
     }
-
 
     public List<Trainer> findNotAssignedToTraineeActive(String traineeUsername) {
         return entityManager

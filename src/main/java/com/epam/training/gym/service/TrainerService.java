@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
 @Transactional
 public class TrainerService {
@@ -63,7 +62,6 @@ public class TrainerService {
         Trainer trainer = findTrainer(username);
         userAccountService.setActive(trainer.getUser(), active);
     }
-
 
     public Trainer updateFullProfile(String username, String firstName, String lastName, boolean isActive) {
         Trainer trainer = findTrainer(username);

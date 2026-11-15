@@ -1,6 +1,5 @@
 package exception;
 
-
 import com.epam.training.gym.dto.responses.ErrorResponse;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.ConflictException;
@@ -20,7 +19,6 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.junit.jupiter.api.Assertions.*;
-
 
 class GlobalExceptionHandlerTest {
 

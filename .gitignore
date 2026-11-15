@@ -43,3 +43,5 @@ logs/
 
 ### H2 database files (dev/stg/prod profiles) ###
 data/
+### Local secrets ###
+.env

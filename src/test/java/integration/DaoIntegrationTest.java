@@ -12,12 +12,9 @@ import com.epam.training.gym.model.Training;
 import com.epam.training.gym.model.TrainingType;
 import com.epam.training.gym.model.User;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -29,7 +26,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 @SpringBootTest(classes = GymCrmApplication.class)
 @ActiveProfiles("local")
@@ -55,9 +51,6 @@ class DaoIntegrationTest {
                 .username(username).password("pass123456").active(true).build();
     }
 
-
-    // ---------- TrainingTypeDao (read-only, seeded by import.sql) ----------
-
     @Test
     @Transactional
     void trainingTypeDao_findAll_returnsTheSeededConstantList() {
@@ -80,9 +73,6 @@ class DaoIntegrationTest {
     void trainingTypeDao_findByName_isEmpty_forUnknownType() {
         assertTrue(trainingTypeDao.findByName("No Such Type").isEmpty());
     }
-
-
-    // ---------- UserDao ----------
 
     @Test
     @Transactional
@@ -123,9 +113,6 @@ class DaoIntegrationTest {
         User reloaded = userDao.findByUsername(username).orElseThrow();
         assertEquals("brandNewPassword1", reloaded.getPassword());
     }
-
-
-    // ---------- TraineeDao ----------
 
     @Test
     @Transactional
@@ -173,9 +160,6 @@ class DaoIntegrationTest {
         assertTrue(traineeDao.findByUsername(username).isEmpty());
         assertTrue(userDao.findByUsername(username).isEmpty());
     }
-
-
-    // ---------- TrainerDao ----------
 
     @Test
     @Transactional
@@ -265,9 +249,6 @@ class DaoIntegrationTest {
         assertTrue(result.stream().anyMatch(t -> t.getUser().getUsername().equals(activeUsername)));
         assertFalse(result.stream().anyMatch(t -> t.getUser().getUsername().equals(inactiveUsername)));
     }
-
-
-    // ---------- TrainingDao ----------
 
     @Test
     @Transactional

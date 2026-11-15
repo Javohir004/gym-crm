@@ -128,8 +128,6 @@ class TrainerControllerTest {
         when(trainerService.updateFullProfile(USERNAME, "Anna", "Lee", true))
                 .thenReturn(trainer(true, yoga));
 
-        // Even though the request carries "Fitness", the controller must not pass it to the
-        // service as a value to apply - specialization is read-only (task note under endpoint 9).
         String body = """
                 {"username":"Anna.Lee","firstName":"Anna","lastName":"Lee","specialization":"Fitness","isActive":true}
                 """;

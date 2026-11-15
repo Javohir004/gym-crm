@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/training-types")
 @Tag(name = "Training Type", description = "The constant list of training types")

@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 @SpringBootTest(classes = GymCrmApplication.class,
         properties = "spring.datasource.url=jdbc:h2:mem:metrics-test;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc

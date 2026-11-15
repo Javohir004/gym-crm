@@ -6,7 +6,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class GymMetrics {
 

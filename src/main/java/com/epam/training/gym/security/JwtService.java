@@ -54,7 +54,6 @@ public class JwtService {
         return token;
     }
 
-    /** Returns the claims, or empty if the token is malformed, tampered with or expired. */
     public Optional<TokenClaims> parse(String token) {
         try {
             Claims claims = Jwts.parser()

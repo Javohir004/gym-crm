@@ -7,19 +7,26 @@ import com.epam.training.gym.exception.NotFoundException;
 import com.epam.training.gym.exception.ValidationException;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
+import com.epam.training.gym.model.Training;
 import com.epam.training.gym.model.User;
 import com.epam.training.gym.service.Registration;
 import com.epam.training.gym.service.TraineeService;
 import com.epam.training.gym.service.UserAccountService;
+import com.epam.training.gym.workload.ActionType;
+import com.epam.training.gym.workload.TrainerWorkloadRequest;
+import com.epam.training.gym.workload.TrainingWorkloadEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import support.LogCapture;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -41,6 +49,7 @@ import static org.mockito.Mockito.when;
 class TraineeServiceTest {
 
     private static final String USERNAME = "John.Doe";
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 15);
     private static final String RAW_PASSWORD = "pass123456";
     private static final String PASSWORD_HASH = "$2a$10$hashedhashedhashedhashed";
 
@@ -50,6 +59,8 @@ class TraineeServiceTest {
     private TrainerDao trainerDao;
     @Mock
     private UserAccountService userAccountService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private TraineeService service;
     private User user;
@@ -61,6 +72,8 @@ class TraineeServiceTest {
         service.setTraineeDao(traineeDao);
         service.setTrainerDao(trainerDao);
         service.setUserAccountService(userAccountService);
+        service.setEventPublisher(eventPublisher);
+        service.setClock(Clock.fixed(TODAY.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
 
         user = User.builder().firstName("John").lastName("Doe").username(USERNAME)
                 .password(PASSWORD_HASH).active(true).build();
@@ -74,8 +87,6 @@ class TraineeServiceTest {
     private void traineeExists() {
         when(traineeDao.findByUsername(USERNAME)).thenReturn(Optional.of(trainee));
     }
-
-    // ---------- createTrainee ----------
 
     @Test
     void createTrainee_savesTraineeAndReturnsRawPasswordSeparately() {
@@ -116,8 +127,6 @@ class TraineeServiceTest {
         }
     }
 
-    // ---------- getByUsername ----------
-
     @Test
     void getByUsername_returnsTrainee() {
         traineeExists();
@@ -133,8 +142,6 @@ class TraineeServiceTest {
 
         assertTrue(ex.getMessage().contains("No.Body"));
     }
-
-    // ---------- updateFullProfile ----------
 
     @Test
     void updateFullProfile_changesProfileAndActiveState() {
@@ -185,8 +192,6 @@ class TraineeServiceTest {
         verify(traineeDao, never()).update(any());
     }
 
-    // ---------- setActive ----------
-
     @Test
     void setActive_delegatesToUserAccountService() {
         traineeExists();
@@ -204,8 +209,6 @@ class TraineeServiceTest {
 
         verifyNoInteractions(userAccountService);
     }
-
-    // ---------- delete ----------
 
     @Test
     void delete_removesTrainee_andLogsIt() {
@@ -228,7 +231,40 @@ class TraineeServiceTest {
         verify(traineeDao, never()).delete(any());
     }
 
-    // ---------- getUnassignedActiveTrainers ----------
+    @Test
+    void delete_cancelsTodaysAndFutureTrainings_butKeepsPastOnesCounted() {
+        Trainer anna = Trainer.builder()
+                .user(User.builder().username("Anna.Lee").firstName("Anna").lastName("Lee").active(true).build())
+                .build();
+        trainee.getTrainings().add(training(anna, TODAY.minusDays(1), 30));
+        trainee.getTrainings().add(training(anna, TODAY, 45));
+        trainee.getTrainings().add(training(anna, TODAY.plusDays(7), 60));
+        traineeExists();
+
+        service.delete(USERNAME);
+
+        ArgumentCaptor<TrainingWorkloadEvent> events = ArgumentCaptor.forClass(TrainingWorkloadEvent.class);
+        verify(eventPublisher, times(2)).publishEvent(events.capture());
+        assertEquals(Set.of(
+                new TrainerWorkloadRequest("Anna.Lee", "Anna", "Lee", true, TODAY, 45, ActionType.DELETE),
+                new TrainerWorkloadRequest("Anna.Lee", "Anna", "Lee", true, TODAY.plusDays(7), 60, ActionType.DELETE)),
+                Set.copyOf(events.getAllValues().stream().map(TrainingWorkloadEvent::request).toList()));
+        verify(traineeDao).delete(trainee);
+    }
+
+    @Test
+    void delete_ofTraineeWithoutTrainings_publishesNothing() {
+        traineeExists();
+
+        service.delete(USERNAME);
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    private Training training(Trainer trainer, LocalDate date, int minutes) {
+        return Training.builder().trainee(trainee).trainer(trainer).trainingName("Session")
+                .trainingDate(date).trainingDuration(minutes).build();
+    }
 
     @Test
     void getUnassignedActiveTrainers_returnsDaoResult() {
@@ -247,8 +283,6 @@ class TraineeServiceTest {
 
         verifyNoInteractions(trainerDao);
     }
-
-    // ---------- updateTrainers ----------
 
     @Test
     void updateTrainers_replacesTheWholeTrainersList() {

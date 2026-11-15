@@ -51,7 +51,6 @@ public class AuthenticationService {
         return jwtService.generateToken(username);
     }
 
-    /** Token for a user that has just been created (registration returns it right away). */
     public String issueToken(String username) {
         return jwtService.generateToken(username);
     }

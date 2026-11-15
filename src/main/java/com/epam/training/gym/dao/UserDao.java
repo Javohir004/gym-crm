@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-
 @Repository
 public class UserDao {
 
@@ -30,7 +29,6 @@ public class UserDao {
                 .getResultStream()
                 .findFirst();
     }
-
 
     public List<String> findUsernamesStartingWith(String prefix) {
         return entityManager

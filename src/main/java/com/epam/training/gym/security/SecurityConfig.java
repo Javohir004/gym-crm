@@ -44,7 +44,7 @@ public class SecurityConfig {
                                                    JsonAuthenticationEntryPoint entryPoint,
                                                    CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // no cookies/sessions, the token is sent in a header
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

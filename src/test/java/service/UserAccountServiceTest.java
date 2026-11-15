@@ -57,8 +57,6 @@ class UserAccountServiceTest {
         return User.builder().username("John.Doe").password(passwordEncoder.encode(rawPassword)).active(true).build();
     }
 
-    // ---------- newUser ----------
-
     @Test
     void newUser_buildsActiveUser_andStoresOnlyTheHashOfTheGeneratedPassword() {
         when(usernameGenerator.generate("John", "Doe")).thenReturn("John.Doe");
@@ -109,8 +107,6 @@ class UserAccountServiceTest {
         assertThrows(ValidationException.class, () -> service.newUser("John", null));
         verifyNoInteractions(usernameGenerator, passwordGenerator);
     }
-
-    // ---------- changePassword ----------
 
     @Test
     void changePassword_storesHashOfNewPassword_andPersistsUser() {
@@ -188,8 +184,6 @@ class UserAccountServiceTest {
                     .noneMatch(m -> m.contains("wrongOld") || m.contains("brandNewPass")));
         }
     }
-
-    // ---------- setActive ----------
 
     @Test
     void setActive_changesState_whenDifferentFromCurrent() {

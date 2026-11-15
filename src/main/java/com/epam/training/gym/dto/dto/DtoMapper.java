@@ -11,7 +11,6 @@ import com.epam.training.gym.model.TrainingType;
 
 import java.util.List;
 
-
 public final class DtoMapper {
 
     private DtoMapper() {

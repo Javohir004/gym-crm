@@ -12,7 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
 @Transactional
 public class UserAccountService {
@@ -44,7 +43,6 @@ public class UserAccountService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /** Username and password are generated as before; only the BCrypt hash goes into the entity. */
     public Registration<User> newUser(String firstName, String lastName) {
         Validation.requireText(firstName, "First name");
         Validation.requireText(lastName, "Last name");

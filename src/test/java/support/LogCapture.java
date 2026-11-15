@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-
 public final class LogCapture implements AutoCloseable {
 
     private final Logger logger;
@@ -29,7 +28,6 @@ public final class LogCapture implements AutoCloseable {
                 .map(ILoggingEvent::getFormattedMessage)
                 .toList();
     }
-
 
     public List<String> allMessages() {
         return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();

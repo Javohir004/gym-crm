@@ -19,7 +19,6 @@ public final class SelfAccess {
         }
     }
 
-    /** Same check, also for a username repeated in the request body (it is optional there). */
     public static void require(Principal principal, String pathUsername, String bodyUsername) {
         require(principal, pathUsername);
         if (bodyUsername != null && !bodyUsername.equals(pathUsername)) {

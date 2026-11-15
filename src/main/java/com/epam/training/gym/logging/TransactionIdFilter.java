@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.UUID;
 
-
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TransactionIdFilter implements Filter {
@@ -33,7 +32,6 @@ public class TransactionIdFilter implements Filter {
             }
             chain.doFilter(request, response);
         } finally {
-            // Always clear - this thread will be reused for the next request.
             MDC.remove(MDC_KEY);
         }
     }

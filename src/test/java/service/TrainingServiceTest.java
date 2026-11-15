@@ -9,6 +9,10 @@ import com.epam.training.gym.exception.ValidationException;
 import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
+import com.epam.training.gym.model.User;
+import com.epam.training.gym.workload.ActionType;
+import com.epam.training.gym.workload.TrainerWorkloadRequest;
+import com.epam.training.gym.workload.TrainingWorkloadEvent;
 import com.epam.training.gym.model.TrainingType;
 import com.epam.training.gym.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import support.LogCapture;
 
 import java.time.LocalDate;
@@ -44,6 +49,8 @@ class TrainingServiceTest {
     private TraineeDao traineeDao;
     @Mock
     private TrainerDao trainerDao;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private TrainingService service;
     private TrainingType yoga;
@@ -56,18 +63,19 @@ class TrainingServiceTest {
         service.setTrainingDao(trainingDao);
         service.setTraineeDao(traineeDao);
         service.setTrainerDao(trainerDao);
+        service.setEventPublisher(eventPublisher);
 
         yoga = TrainingType.builder().trainingTypeName("Yoga").build();
         trainee = Trainee.builder().build();
-        trainer = Trainer.builder().specialization(yoga).build();
+        trainer = Trainer.builder().specialization(yoga)
+                .user(User.builder().username("Anna.Lee").firstName("Anna").lastName("Lee").active(true).build())
+                .build();
     }
 
     private void bothExist() {
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(trainerDao.findByUsername("Anna.Lee")).thenReturn(Optional.of(trainer));
     }
-
-    // ---------- addTraining ----------
 
     @Test
     void addTraining_usesTrainersSpecializationAsType() {
@@ -86,6 +94,25 @@ class TrainingServiceTest {
         assertEquals(DATE, saved.getTrainingDate());
         assertEquals(60, saved.getTrainingDuration());
         assertSame(saved, result);
+    }
+
+    @Test
+    void addTraining_publishesAddWorkloadEventForTheTrainer() {
+        bothExist();
+        when(trainingDao.save(any(Training.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 60);
+
+        verify(eventPublisher).publishEvent(new TrainingWorkloadEvent(new TrainerWorkloadRequest(
+                "Anna.Lee", "Anna", "Lee", true, DATE, 60, ActionType.ADD)));
+    }
+
+    @Test
+    void addTraining_publishesNothing_whenValidationFails() {
+        assertThrows(ValidationException.class,
+                () -> service.addTraining("John.Doe", "Anna.Lee", "Morning Yoga", DATE, 0));
+
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -149,8 +176,6 @@ class TrainingServiceTest {
         assertTrue(ex.getMessage().contains("Anna.Lee"));
         verify(trainingDao, never()).save(any());
     }
-
-    // ---------- searching ----------
 
     @Test
     void getTraineeTrainings_passesAllFiltersToDao() {

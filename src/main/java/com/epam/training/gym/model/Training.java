@@ -17,7 +17,6 @@ import lombok.ToString;
 
 import java.time.LocalDate;
 
-
 @Entity
 @Table(name = "training")
 @Getter

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 
-
 @Component
 public class DatabaseResponseTimeHealthIndicator implements HealthIndicator {
 

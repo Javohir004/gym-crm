@@ -68,8 +68,6 @@ class TrainerServiceTest {
         when(trainerDao.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
     }
 
-    // ---------- createTrainer ----------
-
     @Test
     void createTrainer_savesTrainerWithSpecialization_andReturnsRawPasswordSeparately() {
         when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(yoga));
@@ -126,8 +124,6 @@ class TrainerServiceTest {
         }
     }
 
-    // ---------- getByUsername ----------
-
     @Test
     void getByUsername_returnsTrainer() {
         trainerExists();
@@ -143,8 +139,6 @@ class TrainerServiceTest {
 
         assertTrue(ex.getMessage().contains("No.Body"));
     }
-
-    // ---------- updateFullProfile ----------
 
     @Test
     void updateFullProfile_changesNamesAndActiveState_butNeverSpecialization() {
@@ -184,8 +178,6 @@ class TrainerServiceTest {
 
         assertThrows(NotFoundException.class, () -> service.updateFullProfile(USERNAME, "Mary", "King", true));
     }
-
-    // ---------- setActive ----------
 
     @Test
     void setActive_delegatesToUserAccountService() {

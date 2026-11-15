@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 
-
 @RestController
 @Tag(name = "Auth", description = "Login and password change, for both Trainees and Trainers. "
         + "Logout is POST /api/logout with the Bearer token.")

@@ -1,6 +1,5 @@
 package com.epam.training.gym.controller;
 
-
 import com.epam.training.gym.dto.dto.DtoMapper;
 import com.epam.training.gym.dto.dto.TraineeTrainingDto;
 import com.epam.training.gym.dto.dto.TrainerShortDto;
@@ -40,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
-
 @RestController
 @RequestMapping("/api/trainees")
 @Tag(name = "Trainee", description = "Trainee registration, profile, trainers list and trainings")
@@ -57,7 +55,6 @@ public class TraineeController {
         this.trainingService = trainingService;
         this.authenticationService = authenticationService;
     }
-
 
     @PostMapping
     @Operation(summary = "Register a new Trainee")

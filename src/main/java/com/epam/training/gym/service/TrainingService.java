@@ -8,15 +8,18 @@ import com.epam.training.gym.model.Trainee;
 import com.epam.training.gym.model.Trainer;
 import com.epam.training.gym.model.Training;
 import com.epam.training.gym.util.Validation;
+import com.epam.training.gym.workload.ActionType;
+import com.epam.training.gym.workload.TrainerWorkloadRequest;
+import com.epam.training.gym.workload.TrainingWorkloadEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-
 
 @Service
 @Transactional
@@ -27,6 +30,7 @@ public class TrainingService {
     private TrainingDao trainingDao;
     private TraineeDao traineeDao;
     private TrainerDao trainerDao;
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public void setTrainingDao(TrainingDao trainingDao) {
@@ -41,6 +45,11 @@ public class TrainingService {
     @Autowired
     public void setTrainerDao(TrainerDao trainerDao) {
         this.trainerDao = trainerDao;
+    }
+
+    @Autowired
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
     }
 
     public Training addTraining(String traineeUsername, String trainerUsername,
@@ -69,6 +78,7 @@ public class TrainingService {
         log.info("Training added: name='{}' trainee={} trainer={} type={} date={} duration={}min",
                 saved.getTrainingName(), traineeUsername, trainerUsername,
                 trainer.getSpecialization().getTrainingTypeName(), saved.getTrainingDate(), saved.getTrainingDuration());
+        eventPublisher.publishEvent(new TrainingWorkloadEvent(TrainerWorkloadRequest.of(saved, ActionType.ADD)));
         return saved;
     }
 

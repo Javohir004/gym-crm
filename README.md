@@ -154,6 +154,39 @@ Every endpoint except registration (1, 2) and login (3) requires a **JWT**:
   `WebApplicationContext` (`WebConfig`) whose parent is the business-layer
   context (`AppConfig`).
 
+## Module 6 — Microservices
+
+```
+discovery-server/           Eureka registry                      :8761
+trainer-workload-service/   trainer monthly hours, in-memory DB  :8082
+(root) gym-crm              main application                     :8081
+```
+
+**Flow:** adding a training publishes a `TrainingWorkloadEvent`; after the
+transaction commits, `WorkloadNotifier` sends `ADD` to trainer-workload-service
+through an OpenFeign client found via Eureka. Deleting a trainee cascades to
+their trainings: trainings dated **today or later** are sent as `DELETE`
+(cancelled, never held); past ones were already worked and stay counted.
+
+| Concern | Implementation |
+|---|---|
+| Discovery | Eureka server + `spring-cloud-starter-netflix-eureka-client` in both services |
+| Circuit breaker | Resilience4j `trainerWorkload`: opens after 5+ calls with ≥50% failures, fails fast for 30s; the fallback logs the undelivered update and gym-crm keeps working |
+| Service auth | gym-crm signs a 5-minute HS256 JWT (`iss=gym-crm`, `scope=workload`) with a secret shared only by the two services (`WORKLOAD_JWT_SECRET`); the workload service rejects anything else with 401 |
+| Transaction logging | gym-crm generates `X-Transaction-Id` and forwards it; the workload service reuses it, so one id appears in both logs. Each service logs endpoint, request, status and response, plus every operation |
+| REST (Richardson level 2) | `POST /api/v1/workloads` (200), `GET /api/v1/workloads/{username}`, `GET /api/v1/workloads/{username}/years/{year}/months/{month}` |
+
+Run in this order (each in its own terminal):
+
+```
+cd discovery-server && mvn spring-boot:run
+cd trainer-workload-service && mvn spring-boot:run
+mvn spring-boot:run
+```
+
+Known limitation: while the breaker is open, updates are logged but not
+re-sent; a message queue would make delivery guaranteed.
+
 ## Tests
 
 All tests pass; line coverage is **96.6%** (JaCoCo excludes `Main` and

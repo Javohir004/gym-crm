@@ -43,7 +43,6 @@ public class Trainer {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-
     @ManyToMany(mappedBy = "trainers", fetch = FetchType.EAGER)
     @Builder.Default
     private Set<Trainee> trainees = new HashSet<>();
