@@ -26,9 +26,7 @@ public class TransactionIdFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String incoming = request.getHeader(HEADER_NAME);
-        String transactionId = incoming != null && SAFE_ID.matcher(incoming).matches()
-                ? incoming : UUID.randomUUID().toString();
+        String transactionId = resolve(request.getHeader(HEADER_NAME));
         MDC.put(MDC_KEY, transactionId);
         try {
             response.setHeader(HEADER_NAME, transactionId);
@@ -36,5 +34,9 @@ public class TransactionIdFilter extends OncePerRequestFilter {
         } finally {
             MDC.remove(MDC_KEY);
         }
+    }
+
+    public static String resolve(String incoming) {
+        return incoming != null && SAFE_ID.matcher(incoming).matches() ? incoming : UUID.randomUUID().toString();
     }
 }

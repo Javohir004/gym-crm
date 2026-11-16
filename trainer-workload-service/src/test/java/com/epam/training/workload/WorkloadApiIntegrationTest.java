@@ -1,5 +1,8 @@
 package com.epam.training.workload;
 
+import com.epam.training.workload.dto.WorkloadRequest;
+import com.epam.training.workload.model.ActionType;
+import com.epam.training.workload.service.TrainerWorkloadService;
 import com.epam.training.workload.support.TestTokens;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.Matchers.matchesPattern;
@@ -28,22 +32,16 @@ class WorkloadApiIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    private static String body(String username, String date, int minutes, String action) {
-        return """
-                {"trainerUsername":"%s","trainerFirstName":"Anna","trainerLastName":"Lee","isActive":true,
-                 "trainingDate":"%s","trainingDuration":%d,"actionType":"%s"}
-                """.formatted(username, date, minutes, action);
-    }
+    @Autowired
+    private TrainerWorkloadService service;
 
     private static MockHttpServletRequestBuilder authorized(MockHttpServletRequestBuilder request) {
         return request.header(HttpHeaders.AUTHORIZATION, "Bearer " + TestTokens.valid());
     }
 
-    private void send(String username, String date, int minutes, String action) throws Exception {
-        mockMvc.perform(authorized(post(BASE)).contentType(MediaType.APPLICATION_JSON)
-                        .content(body(username, date, minutes, action)))
-                .andExpect(status().isOk());
+    private void send(String username, String date, int minutes, String action) {
+        service.process(new WorkloadRequest(username, "Anna", "Lee", true, LocalDate.parse(date), minutes,
+                ActionType.valueOf(action)));
     }
 
     @Test
@@ -67,8 +65,7 @@ class WorkloadApiIntegrationTest {
 
     @Test
     void withoutToken_returns401_inJson() throws Exception {
-        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
-                        .content(body("Api.Trainer", "2026-03-01", 60, "ADD")))
+        mockMvc.perform(get(BASE + "/Api.Trainer"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }
@@ -83,19 +80,9 @@ class WorkloadApiIntegrationTest {
     }
 
     @Test
-    void invalidRequest_returns400_namingTheFields() throws Exception {
-        mockMvc.perform(authorized(post(BASE)).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"trainerUsername\":\"Api.Trainer\",\"trainingDuration\":-5}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", matchesPattern(".*actionType.*trainingDuration.*")));
-    }
-
-    @Test
-    void unknownActionType_returns400() throws Exception {
-        mockMvc.perform(authorized(post(BASE)).contentType(MediaType.APPLICATION_JSON)
-                        .content(body("Api.Trainer", "2026-03-01", 60, "UPDATE")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Malformed request body"));
+    void workloadUpdates_areNoLongerAcceptedOverRest_onlyThroughTheQueue() throws Exception {
+        mockMvc.perform(authorized(post(BASE)).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

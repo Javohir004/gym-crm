@@ -2,14 +2,10 @@ package com.epam.training.workload.controller;
 
 import com.epam.training.workload.dto.MonthlyWorkloadResponse;
 import com.epam.training.workload.dto.TrainerSummaryResponse;
-import com.epam.training.workload.dto.WorkloadRequest;
 import com.epam.training.workload.service.TrainerWorkloadService;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,12 +19,6 @@ public class WorkloadController {
 
     public WorkloadController(TrainerWorkloadService service) {
         this.service = service;
-    }
-
-    @PostMapping
-    public ResponseEntity<Void> updateWorkload(@Valid @RequestBody WorkloadRequest request) {
-        service.process(request);
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{username}")
