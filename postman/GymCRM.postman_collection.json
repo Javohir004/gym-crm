@@ -5,82 +5,193 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8081" },
-    { "key": "traineeUsername", "value": "" },
-    { "key": "traineePassword", "value": "" },
-    { "key": "trainerUsername", "value": "" },
-    { "key": "trainerPassword", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "traineeUsername",
+      "value": ""
+    },
+    {
+      "key": "traineePassword",
+      "value": ""
+    },
+    {
+      "key": "trainerUsername",
+      "value": ""
+    },
+    {
+      "key": "trainerPassword",
+      "value": ""
+    },
+    {
+      "key": "traineeToken",
+      "value": ""
+    },
+    {
+      "key": "trainerToken",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "1. Register Trainer",
-      "event": [{
-        "listen": "test",
-        "script": { "exec": [
-          "const body = pm.response.json();",
-          "pm.collectionVariables.set('trainerUsername', body.username);",
-          "pm.collectionVariables.set('trainerPassword', body.password);"
-        ]}
-      }],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('trainerUsername', body.username);",
+              "pm.collectionVariables.set('trainerPassword', body.password);",
+              "pm.collectionVariables.set('trainerToken', body.token);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "url": "{{baseUrl}}/api/trainers",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Lee\",\n  \"specialization\": \"Yoga\"\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Lee\",\n  \"specialization\": \"Yoga\"\n}"
+        }
       }
     },
     {
       "name": "2. Register Trainee",
-      "event": [{
-        "listen": "test",
-        "script": { "exec": [
-          "const body = pm.response.json();",
-          "pm.collectionVariables.set('traineeUsername', body.username);",
-          "pm.collectionVariables.set('traineePassword', body.password);"
-        ]}
-      }],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('traineeUsername', body.username);",
+              "pm.collectionVariables.set('traineePassword', body.password);",
+              "pm.collectionVariables.set('traineeToken', body.token);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "url": "{{baseUrl}}/api/trainees",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"address\": \"Tashkent, Chilonzor\"\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"address\": \"Tashkent, Chilonzor\"\n}"
+        }
       }
     },
     {
       "name": "3. Login (Trainee)",
       "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/api/login?username={{traineeUsername}}&password={{traineePassword}}"
-      }
+        "method": "POST",
+        "url": "{{baseUrl}}/api/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"password\": \"{{traineePassword}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('traineeToken', body.token);"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "4. Change Login (Trainee)",
       "request": {
         "method": "PUT",
         "url": "{{baseUrl}}/api/login",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\",\n  \"newPassword\": \"NewPass123\"\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\",\n  \"newPassword\": \"NewPass123\"\n}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
       "name": "4b. (Postman) Remember the new trainee password",
-      "event": [{
-        "listen": "prerequest",
-        "script": { "exec": [
-          "pm.collectionVariables.set('traineePassword', 'NewPass123');"
-        ]}
-      }],
-      "request": { "method": "GET", "url": "{{baseUrl}}/api/training-types" }
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('traineePassword', 'NewPass123');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/training-types",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
     },
     {
       "name": "5. Get Trainee Profile",
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -88,12 +199,26 @@
       "request": {
         "method": "PUT",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"address\": \"Tashkent, Yunusobod\",\n  \"isActive\": true\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"address\": \"Tashkent, Yunusobod\",\n  \"isActive\": true\n}"
+        }
       }
     },
     {
@@ -101,10 +226,16 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{trainerUsername}}" },
-          { "key": "password", "value": "{{trainerPassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trainerToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -112,12 +243,26 @@
       "request": {
         "method": "PUT",
         "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{trainerUsername}}" },
-          { "key": "password", "value": "{{trainerPassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Lee\",\n  \"isActive\": true\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trainerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Lee\",\n  \"isActive\": true\n}"
+        }
       }
     },
     {
@@ -125,10 +270,16 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/unassigned-trainers",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -136,12 +287,26 @@
       "request": {
         "method": "PUT",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainers\": [\"{{trainerUsername}}\"]\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainers\": [\"{{trainerUsername}}\"]\n}"
+        }
       }
     },
     {
@@ -149,12 +314,26 @@
       "request": {
         "method": "POST",
         "url": "{{baseUrl}}/api/trainings",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Yoga\",\n  \"trainingDate\": \"2026-09-01\",\n  \"trainingDuration\": 60\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Yoga\",\n  \"trainingDate\": \"2026-09-01\",\n  \"trainingDuration\": 60\n}"
+        }
       }
     },
     {
@@ -162,10 +341,16 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainings",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -173,10 +358,16 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}/trainings",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{trainerUsername}}" },
-          { "key": "password", "value": "{{trainerPassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trainerToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -184,12 +375,26 @@
       "request": {
         "method": "PATCH",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}/status",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"isActive\": false\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"isActive\": false\n}"
+        }
       }
     },
     {
@@ -197,19 +402,43 @@
       "request": {
         "method": "PATCH",
         "url": "{{baseUrl}}/api/trainers/{{trainerUsername}}/status",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{trainerUsername}}" },
-          { "key": "password", "value": "{{trainerPassword}}" }
-        ]},
-        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"isActive\": false\n}" }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trainerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"isActive\": false\n}"
+        }
       }
     },
     {
       "name": "17. Get Training Types",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/api/training-types"
+        "url": "{{baseUrl}}/api/training-types",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     },
     {
@@ -217,10 +446,33 @@
       "request": {
         "method": "DELETE",
         "url": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
-        "auth": { "type": "basic", "basic": [
-          { "key": "username", "value": "{{traineeUsername}}" },
-          { "key": "password", "value": "{{traineePassword}}" }
-        ]}
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18. Logout (Trainee)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/logout",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{traineeToken}}",
+              "type": "string"
+            }
+          ]
+        }
       }
     }
   ]

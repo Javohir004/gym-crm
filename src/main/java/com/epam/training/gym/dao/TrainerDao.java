@@ -23,7 +23,6 @@ public class TrainerDao {
         this.entityManager = entityManager;
     }
 
-
     public Trainer save(Trainer trainer) {
         entityManager.persist(trainer);
         log.info("Saved trainer id={} username={}", trainer.getId(), trainer.getUser().getUsername());
@@ -63,7 +62,6 @@ public class TrainerDao {
                 .getResultList();
     }
 
-
     public List<Trainer> findNotAssignedToTraineeActive(String traineeUsername) {
         return entityManager
                 .createQuery("select t from Trainer t where t.user.active = true and t.id not in "
@@ -71,5 +69,17 @@ public class TrainerDao {
                         Trainer.class)
                 .setParameter("username", traineeUsername)
                 .getResultList();
+    }
+
+    public long countAll() {
+        return entityManager
+                .createQuery("select count(t) from Trainer t", Long.class)
+                .getSingleResult();
+    }
+
+    public long countActive() {
+        return entityManager
+                .createQuery("select count(t) from Trainer t where t.user.active = true", Long.class)
+                .getSingleResult();
     }
 }

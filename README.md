@@ -21,14 +21,14 @@ Context/MVC and an embedded Tomcat are wired by hand.
 model/       JPA entities (User, Trainee, Trainer, Training, TrainingType)
 dao/         EntityManager-based DAOs
 service/     Business logic, authentication, validation, @Transactional
-facade/      GymFacade — one method per required function
 controller/  @RestController classes — the 17 REST endpoints
 dto/
   requests/  Request bodies
   responses/ Response bodies
 exception/   Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
 logging/     TransactionIdFilter, RestCallLoggingFilter
-util/        Validation, BasicAuthUtil
+util/        Validation
+security/    Spring Security config, JWT, login-attempt protection, logout
 config/      AppConfig (DB/Hibernate/transactions), WebConfig (MVC)
 Main.java            demo for the Hibernate-module functions (console)
 RestApplication.java starts the embedded Tomcat + REST API
@@ -83,11 +83,21 @@ auto-save the generated username/password for the rest of the collection).
 
 ### Authentication
 
-Every endpoint except registration (1, 2) and "Get Training types" (17) requires
-**HTTP Basic Auth** (`Authorization: Basic base64(username:password)`). The
-task's own per-endpoint "Request" fields rarely repeat the password, so it
-travels in this standard header instead, uniformly, for every authenticated
-call.
+Every endpoint except registration (1, 2) and login (3) requires a **JWT**:
+`Authorization: Bearer <token>`.
+
+* **Registration** returns `username`, the generated `password` (shown once, only its
+  BCrypt hash is stored) and a `token`.
+* **Login** `POST /api/login` with `{"username": "...", "password": "..."}` returns `{"token": "..."}`.
+* **Brute-force protection**: after 3 wrong passwords the username is blocked for
+  5 minutes (HTTP 429, even for the correct password).
+* **Logout** `POST /api/logout` with the Bearer token puts the token on a blacklist.
+* **Own profile only**: a user can only read or change his or her own data (HTTP 403 otherwise).
+* **CORS**: allowed origins are set in `gym.security.cors.allowed-origins`.
+* Settings (`application.properties`): `gym.security.jwt.secret` (override with the
+  `GYM_JWT_SECRET` environment variable, at least 32 characters),
+  `gym.security.jwt.expiration-minutes`, `gym.security.login.max-attempts`,
+  `gym.security.login.block-minutes`.
 
 ### Endpoints
 
@@ -95,8 +105,9 @@ call.
 |---|---|---|
 | 1 | Trainer Registration | `POST /trainers` |
 | 2 | Trainee Registration | `POST /trainees` |
-| 3 | Login | `GET /login?username=&password=` |
+| 3 | Login | `POST /login` (JSON body) |
 | 4 | Change Login | `PUT /login` |
+| 18 | Logout | `POST /logout` |
 | 5 | Get Trainee Profile | `GET /trainees/{username}` |
 | 6 | Update Trainee Profile | `PUT /trainees/{username}` |
 | 7 | Delete Trainee Profile | `DELETE /trainees/{username}` |
@@ -142,6 +153,72 @@ call.
   `RestApplication.java`, with a `DispatcherServlet` wired to a child
   `WebApplicationContext` (`WebConfig`) whose parent is the business-layer
   context (`AppConfig`).
+
+## Modules 6–7 — Microservices and messaging
+
+```
+docker-compose.yml          ActiveMQ Classic broker               :61616 (console :8161)
+discovery-server/           Eureka registry                       :8761
+trainer-workload-service/   trainer monthly hours, in-memory DB   :8082
+(root) gym-crm              main application                      :8081
+```
+
+**Flow:** adding a training publishes a `TrainingWorkloadEvent`; after the
+transaction commits, `WorkloadMessagePublisher` sends an `ADD` message to the
+`trainer.workload` queue. Deleting a trainee cascades to their trainings:
+trainings dated **today or later** are sent as `DELETE` (cancelled, never
+held); past ones were already worked and stay counted.
+`WorkloadMessageListener` in trainer-workload-service consumes the queue and
+updates the trainer's monthly totals. REST between the services was replaced
+by messaging; the workload service keeps only its read endpoints.
+
+| Concern | Implementation |
+|---|---|
+| Messaging | Spring JMS on ActiveMQ: `JmsTemplate` sends, `@JmsListener` receives; no hand-written JMS sessions or producers |
+| Serialization | JSON: `MappingJackson2MessageConverter` on the sender, Jackson `ObjectMapper` on the receiver |
+| Error handling | Invalid messages (missing/invalid fields, malformed JSON, bad service token) go straight to `DLQ.trainer.workload` with an `errorReason` property. Processing failures roll back the transacted session and are redelivered with exponential backoff; after 3 attempts they go to the same DLQ |
+| Horizontal scaling | Competing consumers: `workload.jms.concurrency` consumers per instance (3-10 local, 5-20 prod), and more instances can read the same queue. `JMSXGroupID` = trainer username keeps one trainer's messages in order on one consumer |
+| Environments | Broker URL, credentials and concurrency per profile (`local` defaults, `dev`, `stg`, `prod`); stg/prod take them only from environment variables |
+| Service auth | gym-crm signs a 5-minute HS256 JWT (`iss=gym-crm`, `scope=workload`) sent as the `serviceToken` message property; the workload service also requires it on its REST reads |
+| Transaction logging | gym-crm's `X-Transaction-Id` travels as the `transactionId` message property, so one id appears in both services' logs |
+| Discovery | Eureka server; both services register |
+| REST (Richardson level 2) | `GET /api/v1/workloads/{username}`, `GET /api/v1/workloads/{username}/years/{year}/months/{month}` |
+
+Run in this order:
+
+```
+docker compose up -d
+cd discovery-server && mvn spring-boot:run
+cd trainer-workload-service && mvn spring-boot:run
+mvn spring-boot:run
+```
+
+A second workload consumer instance: `mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8083`.
+Note that each instance keeps its own in-memory totals, so reads are only
+consistent with one instance until the data moves to a shared database.
+
+Tests need neither Docker nor Eureka: they use an embedded in-memory ActiveMQ broker.
+
+## Module 8 — NoSQL (MongoDB)
+
+trainer-workload-service stores one document per trainer in the
+`trainer_summaries` collection (MongoDB 7, `docker-compose.yml` service `mongodb`, :27017):
+
+```
+{ trainerUsername, trainerFirstName, trainerLastName, trainerStatus (boolean),
+  years: [ { year, months: [ { month, trainingSummaryDuration (number) } ] } ], version }
+```
+
+| Concern | Implementation |
+|---|---|
+| Event processing | Find the trainer by username; if missing, create the document with the year and month of the training date; add (`ADD`) or subtract (`DELETE`, never below zero) the duration in that month; save |
+| Indexes | `trainer_first_name_last_name` (compound, search by first + last name: `GET /api/v1/workloads?firstName=&lastName=`) and `trainer_username_unique` (unique, lookups by username); declared on the document and created at startup |
+| Validation | Bean Validation on the document before every save (`ValidatingMongoEventListener`) plus a `$jsonSchema` validator on the collection (`MongoSchemaInitializer`), which enforces boolean status and numeric durations |
+| Error handling | Invalid documents go straight to the DLQ; storage failures, optimistic-locking conflicts (`@Version`) and duplicate-key races are retried, then go to the DLQ; REST reads return 503 when MongoDB is down |
+| Logging | Transaction level: REST filter and JMS listener, both under the incoming `transactionId`. Operation level: every find, create, update and skip in `TrainerWorkloadService` |
+| Profiles | `local`/`dev` use host/port/database (defaults `localhost:27017/gym_workload`); stg/prod read `MONGODB_URI` |
+
+Tests use an embedded MongoDB (flapdoodle); it is downloaded on the first run.
 
 ## Tests
 

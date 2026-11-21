@@ -1,22 +1,24 @@
 package exception;
 
-
-import com.epam.training.gym.dto.ErrorResponse;
+import com.epam.training.gym.dto.responses.ErrorResponse;
 import com.epam.training.gym.exception.AuthenticationException;
 import com.epam.training.gym.exception.ConflictException;
+import com.epam.training.gym.exception.ForbiddenException;
 import com.epam.training.gym.exception.GlobalExceptionHandler;
 import com.epam.training.gym.exception.NotFoundException;
+import com.epam.training.gym.exception.TooManyAttemptsException;
 import com.epam.training.gym.exception.ValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
+import static org.junit.jupiter.api.Assertions.*;
 
 class GlobalExceptionHandlerTest {
 
@@ -51,6 +53,24 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void forbiddenException_mapsTo403() {
+        ResponseEntity<ErrorResponse> response = handler.handleForbidden(new ForbiddenException("Not your profile"));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals(403, response.getBody().status());
+        assertEquals("Not your profile", response.getBody().message());
+    }
+
+    @Test
+    void tooManyAttemptsException_mapsTo429() {
+        ResponseEntity<ErrorResponse> response = handler.handleTooManyAttempts(
+                new TooManyAttemptsException("Try again in 5 minute(s)"));
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        assertEquals(429, response.getBody().status());
+    }
+
+    @Test
     void notFoundException_mapsTo404() {
         ResponseEntity<ErrorResponse> response = handler.handleNotFound(new NotFoundException("Trainee not found: John.Doe"));
 
@@ -80,5 +100,21 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(500, response.getBody().status());
         assertFalse(response.getBody().message().contains("hunter2"));
+    }
+
+    @Test
+    void unknownResource_returns404_notServerError() {
+        var response = handler.handleNoResource(new NoResourceFoundException(HttpMethod.GET, "/favicon.ico"));
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void wrongHttpMethod_returns405_notServerError() {
+        var response = handler.handleMethodNotSupported(new HttpRequestMethodNotSupportedException("POST"));
+
+        assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+        assertNotNull(response.getBody());
     }
 }

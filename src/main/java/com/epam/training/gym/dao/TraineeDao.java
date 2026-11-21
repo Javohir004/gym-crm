@@ -21,7 +21,6 @@ public class TraineeDao {
         this.entityManager = entityManager;
     }
 
-
     public Trainee save(Trainee trainee) {
         entityManager.persist(trainee);
         log.info("Saved trainee id={} username={}", trainee.getId(), trainee.getUser().getUsername());
@@ -41,7 +40,6 @@ public class TraineeDao {
                 .getResultStream()
                 .findFirst();
     }
-
 
     public void delete(Trainee trainee) {
         Trainee managed = entityManager.contains(trainee) ? trainee : entityManager.merge(trainee);

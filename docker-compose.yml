@@ -1,0 +1,25 @@
+services:
+  activemq:
+    image: apache/activemq-classic:6.1.2
+    container_name: gym-activemq
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    environment:
+      ACTIVEMQ_CONNECTION_USER: admin
+      ACTIVEMQ_CONNECTION_PASSWORD: admin
+      ACTIVEMQ_WEB_USER: admin
+      ACTIVEMQ_WEB_PASSWORD: admin
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7.0
+    container_name: gym-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
