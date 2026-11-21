@@ -220,6 +220,26 @@ trainer-workload-service stores one document per trainer in the
 
 Tests use an embedded MongoDB (flapdoodle); it is downloaded on the first run.
 
+## Module 9 — Testing (Cucumber, BDD)
+
+Behaviour is described in Gherkin `.feature` files, run by the Cucumber JUnit Platform engine
+(`cucumber-java`, `cucumber-spring`, `cucumber-junit-platform-engine`). Every feature has positive and negative scenarios.
+
+| Level | Where | What is covered |
+|---|---|---|
+| Component — gym-crm | `src/test/resources/features/gym`, steps in `src/test/java/component` | Login, JWT access (no / tampered token, wrong password, brute-force block); adding a training publishes `ADD`, deleting a trainee publishes `DELETE` for upcoming trainings only; unknown trainer (404), no token (401), missing name (400) publish nothing |
+| Component — trainer-workload-service | `trainer-workload-service/src/test/resources/features/workload`, steps in `...workload.component` | JMS listener → MongoDB summary (`ADD`, sum, `DELETE`); missing/expired token, missing fields, bad duration, unknown action, malformed JSON → DLQ with reason; REST reads: summary, month, search, 404, 400, 401 (no / expired / foreign token) |
+| Integration | `integration-tests` module | gym-crm REST → ActiveMQ → workload listener → MongoDB → workload REST, both services running in one JVM on random ports with an embedded broker and embedded MongoDB; negative: unknown trainer, no token, forged service token (DLQ), gym-crm user token rejected by the workload service |
+
+`integration-tests` depends on both service jars, so the services are built with an `exec` classifier
+for the runnable jar and installed first:
+
+```
+mvn install                                    # gym-crm
+cd trainer-workload-service && mvn install
+cd ../integration-tests && mvn test
+```
+
 ## Tests
 
 All tests pass; line coverage is **96.6%** (JaCoCo excludes `Main` and
