@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainees"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "dateOfBirth": "2000-01-15",
+      "address": "Tashkent, Chilonzor"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const body = pm.response.json();
+      pm.collectionVariables.set('traineeUsername', body.username);
+      pm.collectionVariables.set('traineePassword', body.password);
+      pm.collectionVariables.set('traineeToken', body.token);
+    language: text/javascript
+order: 2000

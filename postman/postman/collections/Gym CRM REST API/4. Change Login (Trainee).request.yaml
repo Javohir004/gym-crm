@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/login"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "{{traineeUsername}}",
+      "oldPassword": "{{traineePassword}}",
+      "newPassword": "NewPass123"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 4000

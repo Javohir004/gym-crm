@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainings"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "traineeUsername": "{{traineeUsername}}",
+      "trainerUsername": "{{trainerUsername}}",
+      "trainingName": "Morning Yoga",
+      "trainingDate": "2026-09-01",
+      "trainingDuration": 60
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 12000

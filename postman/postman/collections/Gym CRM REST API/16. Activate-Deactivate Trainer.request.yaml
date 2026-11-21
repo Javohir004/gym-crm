@@ -1,0 +1,18 @@
+$kind: http-request
+name: 16. Activate/Deactivate Trainer
+url: "{{baseUrl}}/api/trainers/{{trainerUsername}}/status"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "{{trainerUsername}}",
+      "isActive": false
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{trainerToken}}"
+order: 16000

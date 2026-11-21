@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainees/{{traineeUsername}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 18000

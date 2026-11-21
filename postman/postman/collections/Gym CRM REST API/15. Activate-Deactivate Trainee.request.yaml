@@ -1,0 +1,18 @@
+$kind: http-request
+name: 15. Activate/Deactivate Trainee
+url: "{{baseUrl}}/api/trainees/{{traineeUsername}}/status"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "{{traineeUsername}}",
+      "isActive": false
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 15000

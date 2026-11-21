@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "traineeUsername": "{{traineeUsername}}",
+      "trainers": ["{{trainerUsername}}"]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 11000
