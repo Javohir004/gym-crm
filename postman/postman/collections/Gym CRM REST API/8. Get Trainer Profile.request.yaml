@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainers/{{trainerUsername}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{trainerToken}}"
+order: 8000

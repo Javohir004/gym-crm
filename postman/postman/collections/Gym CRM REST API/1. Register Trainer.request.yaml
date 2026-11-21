@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainers"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "firstName": "Anna",
+      "lastName": "Lee",
+      "specialization": "Yoga"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const body = pm.response.json();
+      pm.collectionVariables.set('trainerUsername', body.username);
+      pm.collectionVariables.set('trainerPassword', body.password);
+      pm.collectionVariables.set('trainerToken', body.token);
+    language: text/javascript
+order: 1000

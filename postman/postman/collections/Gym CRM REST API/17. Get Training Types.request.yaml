@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/training-types"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 17000

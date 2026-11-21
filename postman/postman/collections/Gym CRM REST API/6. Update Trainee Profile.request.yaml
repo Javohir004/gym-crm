@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/api/trainees/{{traineeUsername}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "{{traineeUsername}}",
+      "firstName": "John",
+      "lastName": "Doe",
+      "dateOfBirth": "2000-01-15",
+      "address": "Tashkent, Yunusobod",
+      "isActive": true
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 7000

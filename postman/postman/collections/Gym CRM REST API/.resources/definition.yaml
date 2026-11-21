@@ -1,0 +1,10 @@
+$kind: collection
+description: All 17 endpoints. Run requests top to bottom inside each folder - registration requests auto-save the generated username/password into collection variables, which the rest of the requests reuse.
+variables:
+  baseUrl: http://localhost:8081
+  traineeUsername: ""
+  traineePassword: ""
+  trainerUsername: ""
+  trainerPassword: ""
+  traineeToken: ""
+  trainerToken: ""

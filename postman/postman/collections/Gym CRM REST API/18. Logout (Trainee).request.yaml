@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/api/logout"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{traineeToken}}"
+order: 19000
