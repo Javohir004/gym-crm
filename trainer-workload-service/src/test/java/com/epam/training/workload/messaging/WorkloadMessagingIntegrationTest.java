@@ -17,6 +17,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.Month;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,6 +36,7 @@ class WorkloadMessagingIntegrationTest {
 
     private static final String QUEUE = "trainer.workload";
     private static final String DLQ = "DLQ.trainer.workload";
+    private static final Pattern USERNAME = Pattern.compile("\"trainerUsername\":\"([^\"]+)\"");
 
     @Autowired
     private JmsTemplate jmsTemplate;
@@ -53,6 +56,10 @@ class WorkloadMessagingIntegrationTest {
                 message.setStringProperty(WorkloadMessageListener.TOKEN_PROPERTY, token);
             }
             message.setStringProperty(WorkloadMessageListener.TRANSACTION_ID_PROPERTY, "tx-it");
+            Matcher username = USERNAME.matcher(body);
+            if (username.find()) {
+                message.setStringProperty("JMSXGroupID", username.group(1));
+            }
             return message;
         });
     }
@@ -74,7 +81,7 @@ class WorkloadMessagingIntegrationTest {
         }
     }
 
-    private int minutes(String username, int year, Month month) {
+    private long minutes(String username, int year, Month month) {
         try {
             return service.getMonthlyWorkload(username, year, month).trainingSummaryDuration();
         } catch (NotFoundException e) {

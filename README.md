@@ -199,6 +199,27 @@ consistent with one instance until the data moves to a shared database.
 
 Tests need neither Docker nor Eureka: they use an embedded in-memory ActiveMQ broker.
 
+## Module 8 — NoSQL (MongoDB)
+
+trainer-workload-service stores one document per trainer in the
+`trainer_summaries` collection (MongoDB 7, `docker-compose.yml` service `mongodb`, :27017):
+
+```
+{ trainerUsername, trainerFirstName, trainerLastName, trainerStatus (boolean),
+  years: [ { year, months: [ { month, trainingSummaryDuration (number) } ] } ], version }
+```
+
+| Concern | Implementation |
+|---|---|
+| Event processing | Find the trainer by username; if missing, create the document with the year and month of the training date; add (`ADD`) or subtract (`DELETE`, never below zero) the duration in that month; save |
+| Indexes | `trainer_first_name_last_name` (compound, search by first + last name: `GET /api/v1/workloads?firstName=&lastName=`) and `trainer_username_unique` (unique, lookups by username); declared on the document and created at startup |
+| Validation | Bean Validation on the document before every save (`ValidatingMongoEventListener`) plus a `$jsonSchema` validator on the collection (`MongoSchemaInitializer`), which enforces boolean status and numeric durations |
+| Error handling | Invalid documents go straight to the DLQ; storage failures, optimistic-locking conflicts (`@Version`) and duplicate-key races are retried, then go to the DLQ; REST reads return 503 when MongoDB is down |
+| Logging | Transaction level: REST filter and JMS listener, both under the incoming `transactionId`. Operation level: every find, create, update and skip in `TrainerWorkloadService` |
+| Profiles | `local`/`dev` use host/port/database (defaults `localhost:27017/gym_workload`); stg/prod read `MONGODB_URI` |
+
+Tests use an embedded MongoDB (flapdoodle); it is downloaded on the first run.
+
 ## Tests
 
 All tests pass; line coverage is **96.6%** (JaCoCo excludes `Main` and

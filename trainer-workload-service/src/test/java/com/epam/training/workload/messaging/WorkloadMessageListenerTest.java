@@ -5,6 +5,7 @@ import com.epam.training.workload.model.ActionType;
 import com.epam.training.workload.security.ServiceTokenValidator;
 import com.epam.training.workload.service.TrainerWorkloadService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -18,6 +19,7 @@ import org.slf4j.MDC;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -125,6 +127,17 @@ class WorkloadMessageListenerTest {
         assertThrows(IllegalStateException.class, () -> listener.onMessage(VALID_BODY, "good-token", "tx-1", 2));
 
         verifyNoInteractions(deadLetters);
+    }
+
+    @Test
+    void documentValidationFailure_isNotRetried_andGoesToTheDeadLetterQueue() {
+        tokenIsValid();
+        doThrow(new ConstraintViolationException("trainerUsername must not be blank", Set.of()))
+                .when(service).process(any());
+
+        listener.onMessage(VALID_BODY, "good-token", "tx-1", 1);
+
+        verify(deadLetters).send(eq(VALID_BODY), startsWith("Trainer summary would be invalid"));
     }
 
     @Test

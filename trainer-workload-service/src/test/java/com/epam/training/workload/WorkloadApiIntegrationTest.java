@@ -82,7 +82,17 @@ class WorkloadApiIntegrationTest {
     @Test
     void workloadUpdates_areNoLongerAcceptedOverRest_onlyThroughTheQueue() throws Exception {
         mockMvc.perform(authorized(post(BASE)).contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
+    void searchByFirstAndLastName_returnsEveryMatchingTrainer() throws Exception {
+        send("Search.Trainer", "2026-03-01", 60, "ADD");
+
+        mockMvc.perform(authorized(get(BASE).param("firstName", "Anna").param("lastName", "Lee")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.trainerUsername == 'Search.Trainer')].years[0].months[0].trainingSummaryDuration")
+                        .value(60));
     }
 
     @Test

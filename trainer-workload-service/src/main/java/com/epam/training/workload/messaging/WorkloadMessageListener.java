@@ -7,6 +7,7 @@ import com.epam.training.workload.service.TrainerWorkloadService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,8 @@ public class WorkloadMessageListener {
         try {
             service.process(request);
             log.info("Message processed: {} for trainer={}", request.actionType(), request.trainerUsername());
+        } catch (ConstraintViolationException e) {
+            deadLetters.send(body, "Trainer summary would be invalid: " + e.getMessage());
         } catch (RuntimeException e) {
             if (deliveryCount >= maxAttempts) {
                 deadLetters.send(body, "Failed after " + deliveryCount + " attempts: " + e.getMessage());

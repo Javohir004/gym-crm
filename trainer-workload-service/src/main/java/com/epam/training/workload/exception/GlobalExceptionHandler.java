@@ -5,6 +5,7 @@ import com.epam.training.workload.logging.TransactionIdFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -33,6 +34,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DateTimeException.class)
     public ResponseEntity<ErrorResponse> handleInvalidDate(DateTimeException e) {
         return respond(HttpStatus.BAD_REQUEST, "Invalid month or date");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleStorageFailure(DataAccessException e) {
+        log.error("Workload storage failure", e);
+        return respond(HttpStatus.SERVICE_UNAVAILABLE, "Workload storage is temporarily unavailable");
     }
 
     @ExceptionHandler(Exception.class)
